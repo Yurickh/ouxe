@@ -15,7 +15,8 @@
     "test": "jest src",
     "lint": "eslint .",
     "build": "rm -r lib && microbundle",
-    "start": "microbundle watch"
+    "start": "microbundle watch",
+    "ouxe": "node ./lib/ouxe.js"
   },
   "dependencies": {
     "@babel/core": "^7.3.4",

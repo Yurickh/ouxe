@@ -10,7 +10,7 @@
   },
   "author": "Yurick <yurick.hauschild@gmail.com>",
   "license": "MIT",
-  "private": true,
+  "repository": "https://github.com/Yurickh/ouxe",
   "scripts": {
     "test": "jest src",
     "lint": "eslint .",

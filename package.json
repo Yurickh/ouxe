@@ -40,7 +40,7 @@
     }
   },
   "lint-staged": {
-    "*.tsx?": [
+    "*.jsx?": [
       "eslint"
     ],
     "*.{ts,tsx,js,json,css,md}": [

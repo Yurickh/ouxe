@@ -6,6 +6,24 @@ import * as inquirer from 'inquirer'
 
 import spawn from 'cross-spawn'
 
+function runProcess(process, ...moreArgs) {
+  const [base, ...args] = process.split(' ')
+  const allArgs = [...args, ...moreArgs]
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(base, allArgs, { stdio: 'inherit' })
+    child.on('close', code => {
+      if (code !== 0) {
+        reject({
+          command: `${base} ${allArgs.join(' ')}`,
+        })
+      } else {
+        resolve()
+      }
+    })
+  })
+}
+
 async function run() {
   const hasYarnLock = fs.existsSync('./yarn.lock')
   const hasPackageLock = fs.existsSync('./package-lock.json')
@@ -25,6 +43,14 @@ async function run() {
       message: 'Select the features you want to configure:',
       choices: [{ name: 'prettier' }, { name: 'jest' }, { name: 'eslint' }],
     },
+    {
+      type: 'confirm',
+      name: 'commit',
+      message:
+        '💅 Do you want to immediately prettier write and commit all files in the project?',
+      default: false,
+      when: ans => ans.features.includes('prettier'),
+    },
   ])
 
   const packageManager =
@@ -35,18 +61,7 @@ async function run() {
   if (!fs.existsSync('./package.json')) {
     console.log('📦 Creating package.json')
     try {
-      await new Promise((resolve, reject) => {
-        const child = spawn(packageManager, ['init'], { stdio: 'inherit' })
-        child.on('close', code => {
-          if (code !== 0) {
-            reject({
-              command: `${packageManager} init`,
-            })
-          } else {
-            resolve()
-          }
-        })
-      })
+      await runProcess(`${packageManager} init`)
     } catch (exception) {
       console.error('🚨 There was an error while initing package.json')
       process.exit(1)
@@ -56,16 +71,7 @@ async function run() {
   if (noLock) {
     console.log('📦 Installing base packages')
     try {
-      await new Promise((resolve, reject) => {
-        const child = spawn(packageManager, ['install'], { stdio: 'inherit' })
-        child.on('close', code => {
-          if (code !== 0) {
-            reject({ command: `${packageManager} install` })
-          } else {
-            resolve()
-          }
-        })
-      })
+      await runProcess(`${packageManager} install`)
     } catch (exception) {
       console.error('🚨 There was an error while installing dependencies')
       process.exit(1)
@@ -74,10 +80,39 @@ async function run() {
 
   if (answers.features.includes('prettier')) {
     console.log('✨ Creating prettier configuration')
+
+    if (answers.commit) {
+      await runProcess('git stash -u')
+    }
+
     fs.copySync(
-      require.resolve('../templates/.prettierrc'),
-      path.join(process.cwd(), '.prettierrc'),
+      path.join(__dirname, '..', 'templates', '.prettierrc'),
+      './.prettierrc',
     )
+    fs.copySync(
+      path.join(__dirname, '..', 'templates', '.prettierignore'),
+      './.prettierignore',
+    )
+
+    try {
+      if (answers.commit) {
+        await runProcess(
+          'npx prettier --write ./**/*.{ts,js,tsx,jsx,json,md,css}',
+        )
+        await runProcess(
+          'git commit -am',
+          '💅 Run prettier in all files of the project',
+        )
+        await runProcess('git stash pop')
+      }
+    } catch (exception) {
+      console.error(
+        `🚨  There was an error while commiting modifications during [${
+          exception.command
+        }]`,
+      )
+      process.exit(1)
+    }
   }
 }
 

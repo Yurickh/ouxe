@@ -2,8 +2,6 @@
   "name": "ouxe",
   "version": "0.1.0",
   "main": "lib/ouxe.js",
-  "umd:main": "lib/ouxe.umd.js",
-  "module": "lib/ouxe.mjs",
   "source": "src/index.js",
   "bin": {
     "ouxe": "./lib/ouxe.js"

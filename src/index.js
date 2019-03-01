@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
-import { existsSync } from 'fs'
+import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as inquirer from 'inquirer'
-import execa from 'execa'
+
+import spawn from 'cross-spawn'
 
 async function run() {
-  const hasYarnLock = existsSync('./yarn.lock')
-  const hasPackageLock = existsSync('./package-lock.json')
+  const hasYarnLock = fs.existsSync('./yarn.lock')
+  const hasPackageLock = fs.existsSync('./package-lock.json')
   const noLock = !hasYarnLock && !hasPackageLock
 
   const answers = await inquirer.prompt([
@@ -31,22 +32,52 @@ async function run() {
     (hasYarnLock && 'yarn') ||
     (hasPackageLock && 'npm')
 
-  if (!existsSync('./package.json')) {
+  if (!fs.existsSync('./package.json')) {
     console.log('📦 Creating package.json')
-    execa.shellSync(`${packageManager} init`)
+    try {
+      await new Promise((resolve, reject) => {
+        const child = spawn(packageManager, ['init'], { stdio: 'inherit' })
+        child.on('close', code => {
+          if (code !== 0) {
+            reject({
+              command: `${packageManager} init`,
+            })
+          } else {
+            resolve()
+          }
+        })
+      })
+    } catch (exception) {
+      console.error('🚨 There was an error while initing package.json')
+      process.exit(1)
+    }
   }
 
   if (noLock) {
     console.log('📦 Installing base packages')
-    await execa(packageManager, ['install']).stdout.pipe(process.stdout)
+    try {
+      await new Promise((resolve, reject) => {
+        const child = spawn(packageManager, ['install'], { stdio: 'inherit' })
+        child.on('close', code => {
+          if (code !== 0) {
+            reject({ command: `${packageManager} install` })
+          } else {
+            resolve()
+          }
+        })
+      })
+    } catch (exception) {
+      console.error('🚨 There was an error while installing dependencies')
+      process.exit(1)
+    }
   }
 
   if (answers.features.includes('prettier')) {
     console.log('✨ Creating prettier configuration')
-    await execa('cp', [
-      path.join(__dirname, '..', 'templates', '.prettierrc'),
+    fs.copySync(
+      require.resolve('../templates/.prettierrc'),
       path.join(process.cwd(), '.prettierrc'),
-    ])
+    )
   }
 }
 

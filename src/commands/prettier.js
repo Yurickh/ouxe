@@ -13,31 +13,56 @@ export const command = ['prettier', 'p']
 
 export const describe = 'Opinionated prettier configuration'
 
-export const builder = {}
+export const builder = yargs =>
+  yargs
+    .options({
+      write: {
+        alias: 'w',
+        type: 'boolean',
+        describe: 'Run prettier on all files of the project',
+      },
+      commit: {
+        alias: 'c',
+        type: 'boolean',
+        requiresArg: 'write',
+        describe: 'Commit written changes. Depends on --write',
+      },
+      'lint-staged': {
+        alias: 'l',
+        type: 'boolean',
+        describe: 'Setup prettier to run on every commit',
+      },
+    })
+    .group(['w', 'c', 'l'], 'Modifiers:')
 
-export const handler = async ({ packager }) => {
-  const preferences = await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'write',
-      message:
-        '💅  Do you want to immediately run prettier on all files in the project?',
-      default: false,
-    },
-    {
-      type: 'confirm',
-      name: 'commit',
-      message: '🐙  And how about making a commit with these changes?',
-      default: true,
-      when: ans => ans.write,
-    },
-    {
-      type: 'confirm',
-      name: 'lintStaged',
-      message: '💅  Do you want to run prettier as a precommit lint process?',
-      default: true,
-    },
-  ])
+export const handler = async ({ packager, ...argv }) => {
+  const preferences = {
+    ...argv,
+    ...(await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'write',
+        message:
+          '💅  Do you want to immediately run prettier on all files in the project?',
+        default: false,
+        when: !argv.write,
+      },
+      {
+        type: 'confirm',
+        name: 'commit',
+        message: '🐙  And how about making a commit with these changes?',
+        default: true,
+        when: ans => !argv.commit && ans.write,
+      },
+      {
+        type: 'confirm',
+        name: 'lintStaged',
+        message: '💅  Do you want to run prettier as a precommit lint process?',
+        default: true,
+        when: !argv.lintStaged,
+      },
+    ])),
+  }
 
   const dependencies = ['prettier']
 

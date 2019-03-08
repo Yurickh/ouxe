@@ -72,6 +72,7 @@ async function routeFeatures(argv) {
   }
 }
 
+// TODO: add some colors to the help page
 async function run() {
   return yargs
     .scriptName('ouxe')

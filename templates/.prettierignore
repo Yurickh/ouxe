@@ -5,3 +5,5 @@ static
 .docz
 .next
 .cache
+coverage
+build

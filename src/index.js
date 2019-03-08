@@ -1,24 +1,17 @@
 #!/usr/bin/env node
 
-import * as fs from 'fs-extra'
 import * as inquirer from 'inquirer'
+import * as fs from 'fs-extra'
+import * as yargs from 'yargs'
+
+import * as prettier from './commands/prettier'
 
 import packageManager from './package-manager'
-import configurePrettier from './configure-prettier'
 
-// REVIEW: How about using ink?
-// REVIEW: we can improve our git workflow using https://github.com/okonet/lint-staged/blob/master/src/gitWorkflow.js as reference
-
-async function run() {
+async function installDependencies(argv) {
   const hasYarnLock = fs.existsSync('./yarn.lock')
   const hasPackageLock = fs.existsSync('./package-lock.json')
   const noLock = !hasYarnLock && !hasPackageLock
-
-  // TODO: add check for feature parameter
-  // usage:
-  // ouxe prettier --commit --npm
-  // ouxe jest --enzyme
-  // ouxe eslint --typescript
 
   const answers = await inquirer.prompt([
     {
@@ -28,40 +21,6 @@ async function run() {
       choices: [{ name: 'yarn' }, { name: 'npm' }],
       when: noLock,
     },
-    {
-      type: 'checkbox',
-      name: 'features',
-      message: 'Select the features you want to configure:',
-      choices: [
-        { name: 'prettier' },
-        // { name: 'jest' },
-        // { name: 'eslint' }
-      ],
-    },
-    {
-      type: 'confirm',
-      name: 'prettierWrite',
-      message:
-        '💅 Do you want to immediately run prettier on all files in the project?',
-      default: false,
-      when: ans => ans.features.includes('prettier'),
-    },
-    {
-      type: 'confirm',
-      name: 'prettierCommit',
-      message: '🐙 And how about making a commit with these changes?',
-      default: true,
-      when: ans => ans.prettierWrite,
-    },
-    {
-      type: 'confirm',
-      name: 'prettierLintStaged',
-      message: '💅 Do you want to run prettier as a precommit lint process?',
-      default: true,
-      when: ans => ans.features.includes('prettier'),
-    },
-    // TODO: add basic jest
-    // TODO: add basic eslint
   ])
 
   const packager = packageManager(
@@ -90,40 +49,39 @@ async function run() {
     }
   }
 
-  const dependencies = []
+  // store packager instance on argv for later use
+  argv.packager = packager
+}
 
-  if (answers.features.includes('prettier')) {
-    dependencies.push('prettier')
+async function routeFeatures(argv) {
+  const { features } = await inquirer.prompt([
+    {
+      type: 'checkbox',
+      name: 'features',
+      message: 'Select the features you want to configure:',
+      choices: [
+        { name: 'prettier' },
+        // { name: 'jest' },
+        // { name: 'eslint' }
+      ],
+    },
+  ])
+
+  if (features.includes('prettier')) {
+    await prettier.handler(argv)
   }
+}
 
-  if (answers.husky) {
-    dependencies.push('husky')
-    dependencies.push('lint-staged')
-  }
-
-  if (dependencies.length > 0) {
-    console.log('📦  Installing dependencies')
-    try {
-      await packager.add({ dev: true, dependencies })
-    } catch (exception) {
-      console.error(
-        `🚨  There was an error while installing dependencies during [${
-          exception.command
-        }]`,
-      )
-      process.exit(1)
-    }
-  }
-
-  if (answers.features.includes('prettier')) {
-    await configurePrettier({
-      write: answers.prettierWrite,
-      commit: answers.prettierCommit,
-      lintStaged: answers.prettierLintStaged,
-    })
-  }
-
-  console.log('🎉 Enjoy your configured workplace!')
+async function run() {
+  return yargs
+    .scriptName('ouxe')
+    .usage('Usage: $0 [configuration] [args]')
+    .middleware([installDependencies])
+    .command('*', 'Choose from some configuration options', {}, routeFeatures)
+    .command(prettier)
+    .demandCommand()
+    .recommendCommands()
+    .help().argv
 }
 
 run()

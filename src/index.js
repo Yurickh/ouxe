@@ -24,10 +24,19 @@ function runProcess(process, ...moreArgs) {
   })
 }
 
+// REVIEW: How about using ink?
+
 async function run() {
+  // TODO: add some kind of helper
   const hasYarnLock = fs.existsSync('./yarn.lock')
   const hasPackageLock = fs.existsSync('./package-lock.json')
   const noLock = !hasYarnLock && !hasPackageLock
+
+  // TODO: add check for feature parameter
+  // usage:
+  // ouxe prettier --commit --npm
+  // ouxe jest --enzyme
+  // ouxe eslint --typescript
 
   const answers = await inquirer.prompt([
     {

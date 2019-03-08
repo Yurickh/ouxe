@@ -30,21 +30,21 @@ async function installDependencies(argv) {
   )
 
   if (!fs.existsSync('./package.json')) {
-    console.log('📦 Creating package.json')
+    console.log('📦  Creating package.json')
     try {
       await packager.init()
     } catch (exception) {
-      console.error('🚨 There was an error while initing package.json')
+      console.error('🚨  There was an error while initing package.json')
       process.exit(1)
     }
   }
 
   if (noLock) {
-    console.log('📦 Installing base packages')
+    console.log('📦  Installing base packages')
     try {
       await packager.install()
     } catch (exception) {
-      console.error('🚨 There was an error while installing dependencies')
+      console.error('🚨  There was an error while installing dependencies')
       process.exit(1)
     }
   }

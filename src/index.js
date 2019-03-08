@@ -29,6 +29,7 @@ function copyTemplate(name) {
 }
 
 // REVIEW: How about using ink?
+// REVIEW: We can break this up with different processes by now
 // REVIEW: we can improve our git workflow using https://github.com/okonet/lint-staged/blob/master/src/gitWorkflow.js as reference
 
 async function run() {
@@ -63,11 +64,18 @@ async function run() {
     },
     {
       type: 'confirm',
-      name: 'commit',
+      name: 'prettierWrite',
       message:
-        '💅 Do you want to immediately prettier write and commit all files in the project?',
+        '💅 Do you want to immediately run prettier on all files in the project?',
       default: false,
       when: ans => ans.features.includes('prettier'),
+    },
+    {
+      type: 'confirm',
+      name: 'prettierCommit',
+      message: '🐙 And how about making a commit with these changes?',
+      default: true,
+      when: ans => ans.prettierWrite,
     },
     {
       type: 'confirm',
@@ -133,7 +141,7 @@ async function run() {
   if (answers.features.includes('prettier')) {
     console.log('✨ Creating prettier configuration')
 
-    if (answers.commit) {
+    if (answers.prettierWrite) {
       console.log(
         "🐙 Don't worry about your unfinished work, we're storing it in a stash",
       )
@@ -143,11 +151,23 @@ async function run() {
     copyTemplate('.prettierrc')
     copyTemplate('.prettierignore')
 
-    if (answers.commit) {
+    if (answers.prettierWrite) {
       try {
         await runProcess(
           'npx prettier --write ./**/*.{ts,js,tsx,jsx,json,md,css}',
         )
+      } catch (exception) {
+        console.error(
+          `🚨  There was an error while running prettier during [${
+            exception.command
+          }]`,
+        )
+        process.exit(1)
+      }
+    }
+
+    if (answers.prettierCommit) {
+      try {
         // TODO: check if any files have been written before commiting
         await runProcess('git add .')
         await runProcess(

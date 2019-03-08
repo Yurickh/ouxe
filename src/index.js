@@ -51,6 +51,9 @@ async function run() {
       default: false,
       when: ans => ans.features.includes('prettier'),
     },
+    // TODO: ask if the user wants to use prettier on aftercommit
+    // TODO: add basic jest
+    // TODO: add basic eslint
   ])
 
   const packageManager =
@@ -82,7 +85,10 @@ async function run() {
     console.log('✨ Creating prettier configuration')
 
     if (answers.commit) {
-      await runProcess('git stash -u')
+      console.log(
+        "🐙 Don't worry about your unfinished work, we're storing it in a stash",
+      )
+      await runProcess('git stash save -u', 'Stash before running prettier')
     }
 
     fs.copySync(
@@ -99,11 +105,12 @@ async function run() {
         await runProcess(
           'npx prettier --write ./**/*.{ts,js,tsx,jsx,json,md,css}',
         )
+        // TODO: check if any files have been written before commiting
+        await runProcess('git add .')
         await runProcess(
-          'git commit -am',
+          'git commit -m',
           '💅 Run prettier in all files of the project',
         )
-        await runProcess('git stash pop')
       }
     } catch (exception) {
       console.error(

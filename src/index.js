@@ -116,16 +116,18 @@ async function run() {
     dependencies.push('lint-staged')
   }
 
-  console.log('📦  Installing dependencies')
-  try {
-    await runProcess('yarn add --dev', ...dependencies)
-  } catch (exception) {
-    console.error(
-      `🚨  There was an error while installing dependencies during [${
-        exception.command
-      }]`,
-    )
-    process.exit(1)
+  if (dependencies.length > 0) {
+    console.log('📦  Installing dependencies')
+    try {
+      await runProcess('yarn add --dev', ...dependencies)
+    } catch (exception) {
+      console.error(
+        `🚨  There was an error while installing dependencies during [${
+          exception.command
+        }]`,
+      )
+      process.exit(1)
+    }
   }
 
   if (answers.features.includes('prettier')) {

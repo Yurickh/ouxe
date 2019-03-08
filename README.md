@@ -1,8 +1,8 @@
 # Ouxe
 
-Basic configuration tool for my common setup
+Basic configuration tool for my common setup.
 
-It ~is~ will be able to handle:
+It ~is~ _will be_ able to handle:
 
 - [yarn](https://yarnpkg.com)
 - [prettier](https://prettier.io)
@@ -30,7 +30,7 @@ You can skip some prompts by providing commands and flags.
 
 Opinionated prettier configuration.
 
-By default, it will create a `.prettierignore` and a `.prettierrc`. With preloaded configuration, which you can later edit.
+By default, it will create a `.prettierignore` and a `.prettierrc` with preloaded configuration, which you can later edit.
 
 #### --write, -w
 
@@ -45,6 +45,16 @@ Commit written changes. Depends on `--write`.
 Setup prettier to run on every commit with husky and lint-staged.
 
 Will create a `.huskyrc` and a `.lintstagedrc` with pre-loaded configuration you can later edit.
+
+## Rationale
+
+### Prettier
+
+Prettier is a great code formatter. It produces readable and organized code most times, and it has nice defaults.
+
+You'll notice I chose to override three configs for it: `semi`, `trailingComma` and `singleQuote`. This is basically personal preference, and I agree with most other prettier patterns.
+
+If I could, I would change the way it organizes some operators, though. Check https://github.com/prettier/prettier/pull/5108.
 
 ## Running locally
 

@@ -2,6 +2,7 @@
   "name": "ouxe",
   "version": "0.2.2",
   "main": "lib/ouxe.js",
+  "module": "lib/ouxe.mjs",
   "source": "src/index.js",
   "bin": {
     "ouxe": "./lib/ouxe.js"
@@ -12,8 +13,8 @@
   "scripts": {
     "test": "jest src",
     "lint": "eslint .",
-    "build": "rm -r lib && microbundle",
-    "start": "microbundle watch",
+    "build": "rm -r lib && microbundle -f es,cjs",
+    "start": "rm -r lib && microbundle watch -f es,cjs",
     "ouxe": "node ./lib/ouxe.js"
   },
   "dependencies": {

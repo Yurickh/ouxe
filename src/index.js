@@ -25,8 +25,8 @@ async function installDependencies(argv) {
 
   const packager = packageManager(
     answers.packageManager ||
-      (hasYarnLock && 'yarn') ||
-      (hasPackageLock && 'npm'),
+      (hasYarnLock && packageManager.YARN) ||
+      (hasPackageLock && packageManager.NPM),
   )
 
   if (!fs.existsSync('./package.json')) {

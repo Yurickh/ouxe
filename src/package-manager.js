@@ -12,3 +12,6 @@ export default function packageManager(name) {
       runProcess(`${name} ${add} ${dev ? dashDev : ''}`, ...dependencies),
   }
 }
+
+packageManager.YARN = Symbol('yarn')
+packageManager.NPM = Symbol('npm')

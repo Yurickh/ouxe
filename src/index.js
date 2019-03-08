@@ -24,7 +24,12 @@ function runProcess(process, ...moreArgs) {
   })
 }
 
+function copyTemplate(name) {
+  fs.copySync(path.join(__dirname, '..', 'templates', name), `./${name}`)
+}
+
 // REVIEW: How about using ink?
+// REVIEW: we can improve our git workflow using https://github.com/okonet/lint-staged/blob/master/src/gitWorkflow.js as reference
 
 async function run() {
   // TODO: add some kind of helper
@@ -50,7 +55,11 @@ async function run() {
       type: 'checkbox',
       name: 'features',
       message: 'Select the features you want to configure:',
-      choices: [{ name: 'prettier' }, { name: 'jest' }, { name: 'eslint' }],
+      choices: [
+        { name: 'prettier' },
+        // { name: 'jest' },
+        // { name: 'eslint' }
+      ],
     },
     {
       type: 'confirm',
@@ -60,7 +69,13 @@ async function run() {
       default: false,
       when: ans => ans.features.includes('prettier'),
     },
-    // TODO: ask if the user wants to use prettier on aftercommit
+    {
+      type: 'confirm',
+      name: 'husky',
+      message: '💅 Do you want to run prettier as a precommit lint process?',
+      default: true,
+      when: ans => ans.features.includes('prettier'),
+    },
     // TODO: add basic jest
     // TODO: add basic eslint
   ])
@@ -90,6 +105,29 @@ async function run() {
     }
   }
 
+  const dependencies = []
+
+  if (answers.features.includes('prettier')) {
+    dependencies.push('prettier')
+  }
+
+  if (answers.husky) {
+    dependencies.push('husky')
+    dependencies.push('lint-staged')
+  }
+
+  console.log('📦  Installing dependencies')
+  try {
+    await runProcess('yarn add --dev', ...dependencies)
+  } catch (exception) {
+    console.error(
+      `🚨  There was an error while installing dependencies during [${
+        exception.command
+      }]`,
+    )
+    process.exit(1)
+  }
+
   if (answers.features.includes('prettier')) {
     console.log('✨ Creating prettier configuration')
 
@@ -100,17 +138,11 @@ async function run() {
       await runProcess('git stash save -u', 'Stash before running prettier')
     }
 
-    fs.copySync(
-      path.join(__dirname, '..', 'templates', '.prettierrc'),
-      './.prettierrc',
-    )
-    fs.copySync(
-      path.join(__dirname, '..', 'templates', '.prettierignore'),
-      './.prettierignore',
-    )
+    copyTemplate('.prettierrc')
+    copyTemplate('.prettierignore')
 
-    try {
-      if (answers.commit) {
+    if (answers.commit) {
+      try {
         await runProcess(
           'npx prettier --write ./**/*.{ts,js,tsx,jsx,json,md,css}',
         )
@@ -120,18 +152,25 @@ async function run() {
           'git commit -m',
           '💅 Run prettier in all files of the project',
         )
+      } catch (exception) {
+        console.error(
+          `🚨  There was an error while commiting modifications during [${
+            exception.command
+          }]`,
+        )
+        process.exit(1)
       }
-    } catch (exception) {
-      console.error(
-        `🚨  There was an error while commiting modifications during [${
-          exception.command
-        }]`,
-      )
-      process.exit(1)
+    }
+
+    if (answers.husky) {
+      copyTemplate('.huskyrc')
+      copyTemplate('.lintstagedrc')
     }
 
     console.log('✅ Your project now has prettier configured!')
   }
+
+  console.log('🎉 Enjoy your configured workplace!')
 }
 
 run()

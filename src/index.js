@@ -1,40 +1,15 @@
 #!/usr/bin/env node
 
 import * as fs from 'fs-extra'
-import * as path from 'path'
 import * as inquirer from 'inquirer'
 
-import spawn from 'cross-spawn'
-import gStatus from 'g-status'
-
-function runProcess(process, ...moreArgs) {
-  const [base, ...args] = process.split(' ')
-  const allArgs = [...args, ...moreArgs]
-
-  return new Promise((resolve, reject) => {
-    const child = spawn(base, allArgs, { stdio: 'inherit' })
-    child.on('close', code => {
-      if (code !== 0) {
-        reject({
-          command: `${base} ${allArgs.join(' ')}`,
-        })
-      } else {
-        resolve()
-      }
-    })
-  })
-}
-
-function copyTemplate(name) {
-  fs.copySync(path.join(__dirname, '..', 'templates', name), `./${name}`)
-}
+import packageManager from './package-manager'
+import configurePrettier from './configure-prettier'
 
 // REVIEW: How about using ink?
-// REVIEW: We can break this up with different processes by now
 // REVIEW: we can improve our git workflow using https://github.com/okonet/lint-staged/blob/master/src/gitWorkflow.js as reference
 
 async function run() {
-  // TODO: add some kind of helper
   const hasYarnLock = fs.existsSync('./yarn.lock')
   const hasPackageLock = fs.existsSync('./package-lock.json')
   const noLock = !hasYarnLock && !hasPackageLock
@@ -80,7 +55,7 @@ async function run() {
     },
     {
       type: 'confirm',
-      name: 'husky',
+      name: 'prettierLintStaged',
       message: '💅 Do you want to run prettier as a precommit lint process?',
       default: true,
       when: ans => ans.features.includes('prettier'),
@@ -89,15 +64,16 @@ async function run() {
     // TODO: add basic eslint
   ])
 
-  const packageManager =
+  const packager = packageManager(
     answers.packageManager ||
-    (hasYarnLock && 'yarn') ||
-    (hasPackageLock && 'npm')
+      (hasYarnLock && 'yarn') ||
+      (hasPackageLock && 'npm'),
+  )
 
   if (!fs.existsSync('./package.json')) {
     console.log('📦 Creating package.json')
     try {
-      await runProcess(`${packageManager} init`)
+      await packager.init()
     } catch (exception) {
       console.error('🚨 There was an error while initing package.json')
       process.exit(1)
@@ -107,7 +83,7 @@ async function run() {
   if (noLock) {
     console.log('📦 Installing base packages')
     try {
-      await runProcess(`${packageManager} install`)
+      await packager.install()
     } catch (exception) {
       console.error('🚨 There was an error while installing dependencies')
       process.exit(1)
@@ -128,7 +104,7 @@ async function run() {
   if (dependencies.length > 0) {
     console.log('📦  Installing dependencies')
     try {
-      await runProcess('yarn add --dev', ...dependencies)
+      await packager.add({ dev: true, dependencies })
     } catch (exception) {
       console.error(
         `🚨  There was an error while installing dependencies during [${
@@ -140,65 +116,11 @@ async function run() {
   }
 
   if (answers.features.includes('prettier')) {
-    console.log('✨ Creating prettier configuration')
-    const currentModified = await gStatus()
-
-    if (answers.prettierWrite && currentModified.length !== 0) {
-      console.log(
-        "🐙 Don't worry about your unfinished work, we're storing it in a stash",
-      )
-      await runProcess('git stash save -u', 'Stash before running prettier')
-    }
-
-    copyTemplate('.prettierrc')
-    copyTemplate('.prettierignore')
-
-    if (answers.prettierWrite) {
-      try {
-        await runProcess(
-          'npx prettier --write ./**/*.{ts,js,tsx,jsx,json,md,css}',
-        )
-      } catch (exception) {
-        console.error(
-          `🚨  There was an error while running prettier during [${
-            exception.command
-          }]`,
-        )
-        process.exit(1)
-      }
-    }
-
-    if (answers.prettierCommit) {
-      const afterPrettierModifier = await gStatus()
-
-      if (afterPrettierModifier.length === 0) {
-        console.log(
-          '💅  We really wanted to commit, but your files are already pretty!',
-        )
-      } else {
-        try {
-          await runProcess('git add .')
-          await runProcess(
-            'git commit -m',
-            '💅 Run prettier in all files of the project',
-          )
-        } catch (exception) {
-          console.error(
-            `🚨  There was an error while commiting modifications during [${
-              exception.command
-            }]`,
-          )
-          process.exit(1)
-        }
-      }
-    }
-
-    if (answers.husky) {
-      copyTemplate('.huskyrc')
-      copyTemplate('.lintstagedrc')
-    }
-
-    console.log('✅ Your project now has prettier configured!')
+    await configurePrettier({
+      write: answers.prettierWrite,
+      commit: answers.prettierCommit,
+      lintStaged: answers.prettierLintStaged,
+    })
   }
 
   console.log('🎉 Enjoy your configured workplace!')

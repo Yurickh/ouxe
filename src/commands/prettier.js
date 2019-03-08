@@ -86,9 +86,9 @@ export const handler = async ({ packager, ...argv }) => {
   console.log('✨  Creating prettier configuration')
   const currentModified = await gStatus()
 
-  if (preferences.write && currentModified.length !== 0) {
+  if (preferences.commit && currentModified.length !== 0) {
     console.log(
-      "🐙 Don't worry about your unfinished work, we're storing it in a stash",
+      "🐙  Don't worry about your unfinished work, we're storing it in a stash",
     )
     await runProcess('git stash save -u', 'Stash before running prettier')
   }

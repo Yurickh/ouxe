@@ -2,5 +2,8 @@ node_modules
 dist
 lib
 static
-.docz/*
-.next/*
+.docz
+.next
+.cache
+coverage
+build

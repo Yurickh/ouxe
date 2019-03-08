@@ -5,6 +5,7 @@ import * as path from 'path'
 import * as inquirer from 'inquirer'
 
 import spawn from 'cross-spawn'
+import gStatus from 'g-status'
 
 function runProcess(process, ...moreArgs) {
   const [base, ...args] = process.split(' ')
@@ -140,8 +141,9 @@ async function run() {
 
   if (answers.features.includes('prettier')) {
     console.log('✨ Creating prettier configuration')
+    const currentModified = await gStatus()
 
-    if (answers.prettierWrite) {
+    if (answers.prettierWrite && currentModified.length !== 0) {
       console.log(
         "🐙 Don't worry about your unfinished work, we're storing it in a stash",
       )
@@ -167,20 +169,27 @@ async function run() {
     }
 
     if (answers.prettierCommit) {
-      try {
-        // TODO: check if any files have been written before commiting
-        await runProcess('git add .')
-        await runProcess(
-          'git commit -m',
-          '💅 Run prettier in all files of the project',
+      const afterPrettierModifier = await gStatus()
+
+      if (afterPrettierModifier.length === 0) {
+        console.log(
+          '💅  We really wanted to commit, but your files are already pretty!',
         )
-      } catch (exception) {
-        console.error(
-          `🚨  There was an error while commiting modifications during [${
-            exception.command
-          }]`,
-        )
-        process.exit(1)
+      } else {
+        try {
+          await runProcess('git add .')
+          await runProcess(
+            'git commit -m',
+            '💅 Run prettier in all files of the project',
+          )
+        } catch (exception) {
+          console.error(
+            `🚨  There was an error while commiting modifications during [${
+              exception.command
+            }]`,
+          )
+          process.exit(1)
+        }
       }
     }
 

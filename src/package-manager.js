@@ -1,7 +1,8 @@
 import runProcess from './run-process'
 
-export default function packageManager(name) {
-  const isYarn = name === 'yarn'
+export default function packageManager(manager) {
+  const isYarn = manager === packageManager.YARN
+  const name = isYarn ? 'yarn' : 'npm'
   const add = isYarn ? 'add' : 'install'
   const dashDev = isYarn ? '--dev' : '--save-dev'
 

@@ -1,13 +1,8 @@
-import * as fs from 'fs-extra'
-import * as path from 'path'
 import * as inquirer from 'inquirer'
 import gStatus from 'g-status'
 
 import runProcess from '../run-process'
-
-function copyTemplate(name) {
-  fs.copySync(path.join(__dirname, '..', 'templates', name), `./${name}`)
-}
+import copyTemplate from '../copy-template'
 
 export const command = ['prettier', 'p']
 

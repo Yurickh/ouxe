@@ -3,6 +3,7 @@ import gStatus from 'g-status'
 
 import runProcess from '../run-process'
 import copyTemplate from '../copy-template'
+import * as lintStagedRC from '../lint-staged-rc'
 
 export const command = ['prettier', 'p']
 
@@ -67,17 +68,17 @@ export const handler = async ({ packager, ...argv }) => {
   }
 
   if (!preferences.skipInstall) {
-  console.log('📦  Installing dependencies')
-  try {
-    await packager.add({ dev: true, dependencies })
-  } catch (exception) {
-    console.error(
-      `🚨  There was an error while installing dependencies during [${
-        exception.command
-      }]`,
-    )
-    process.exit(1)
-  }
+    console.log('📦  Installing dependencies')
+    try {
+      await packager.add({ dev: true, dependencies })
+    } catch (exception) {
+      console.error(
+        `🚨  There was an error while installing dependencies during [${
+          exception.command
+        }]`,
+      )
+      process.exit(1)
+    }
   }
 
   console.log('✨  Creating prettier configuration')
@@ -136,7 +137,8 @@ export const handler = async ({ packager, ...argv }) => {
 
   if (preferences.lintStaged) {
     copyTemplate('.huskyrc')
-    copyTemplate('.lintstagedrc')
+    // we can't just copy the template because eslint might need to add new configs to it
+    lintStagedRC.addPrettier()
   }
 
   console.log('✅  Your project now has prettier configured!')

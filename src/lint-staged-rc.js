@@ -10,7 +10,7 @@ const getBaseConfig = () =>
 // getTargetConfig := feature -> config
 const getTargetConfig = feature =>
   fs.readJSONSync(
-    path.join(__dirname, '..', 'templates', `${feature}${targetFile}`),
+    path.join(__dirname, '..', 'templates', `${feature}.lintstagedrc.json`),
   )
 
 // mergeJSON := config -> config -> void

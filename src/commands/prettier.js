@@ -136,7 +136,7 @@ export const handler = async ({ packager, ...argv }) => {
   }
 
   if (preferences.lintStaged) {
-    copyTemplate('.huskyrc')
+    copyTemplate('.huskyrc.json')
     // we can't just copy the template because eslint might need to add new configs to it
     lintStagedRC.addPrettier()
   }

@@ -66,6 +66,7 @@ export const handler = async ({ packager, ...argv }) => {
     dependencies.push('lint-staged')
   }
 
+  if (!preferences.skipInstall) {
   console.log('📦  Installing dependencies')
   try {
     await packager.add({ dev: true, dependencies })
@@ -76,6 +77,7 @@ export const handler = async ({ packager, ...argv }) => {
       }]`,
     )
     process.exit(1)
+  }
   }
 
   console.log('✨  Creating prettier configuration')
@@ -93,8 +95,9 @@ export const handler = async ({ packager, ...argv }) => {
 
   if (preferences.write) {
     try {
-      await runProcess(
-        'npx prettier --write ./**/*.{ts,js,tsx,jsx,json,md,css}',
+      await packager.run(
+        'prettier --write',
+        './**/*.{ts,js,tsx,jsx,json,md,css}',
       )
     } catch (exception) {
       console.error(

@@ -39,7 +39,7 @@ async function installDependencies(argv) {
     }
   }
 
-  if (noLock) {
+  if (noLock && !argv.skipInstall) {
     console.log('📦  Installing base packages')
     try {
       await packager.install()
@@ -80,6 +80,12 @@ async function run() {
     .middleware([installDependencies])
     .command('*', 'Choose from some configuration options', {}, routeFeatures)
     .command(prettier)
+    .options({
+      'skip-install': {
+        type: 'boolean',
+        describe: 'Skip installation steps. Ideal for the unconnected.',
+      },
+    })
     .demandCommand()
     .recommendCommands()
     .help().argv

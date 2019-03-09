@@ -68,6 +68,9 @@ async function routeFeatures(argv) {
     },
   ])
 
+  // We want to congrat only once
+  argv.skipCongrats = true
+
   if (features.includes('prettier')) {
     await prettier.handler(argv)
   }
@@ -75,10 +78,14 @@ async function routeFeatures(argv) {
   if (features.includes('eslint')) {
     await eslint.handler(argv)
   }
+
+  // this is the time of our lives
+  console.log('🎉  Enjoy your configured workplace!')
 }
 
 // TODO: add some colors to the help page
 async function run() {
+  // If we don't store the result, this will get tree-shaked!
   const argv = yargs
     .scriptName('ouxe')
     .usage('Usage: $0 [configuration] [args]')

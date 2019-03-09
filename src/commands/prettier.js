@@ -91,7 +91,7 @@ export const handler = async ({ packager, ...argv }) => {
     await runProcess('git stash save -u', 'Stash before running prettier')
   }
 
-  copyTemplate('.prettierrc')
+  copyTemplate('.prettierrc.json')
   copyTemplate('.prettierignore')
 
   if (preferences.write) {
@@ -142,4 +142,8 @@ export const handler = async ({ packager, ...argv }) => {
   }
 
   console.log('✅  Your project now has prettier configured!')
+
+  if (!preferences.skipCongrats) {
+    console.log('🎉  Enjoy your configured workplace!')
+  }
 }

@@ -56,4 +56,8 @@ export const handler = async ({ packager, ...argv }) => {
   }
 
   console.log('✅  Your project now has eslint configured!')
+
+  if (!preferences.skipCongrats) {
+    console.log('🎉  Enjoy your configured workplace!')
+  }
 }

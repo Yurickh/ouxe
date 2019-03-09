@@ -5,6 +5,7 @@ import * as fs from 'fs-extra'
 import * as yargs from 'yargs'
 
 import * as prettier from './commands/prettier'
+import * as eslint from './commands/eslint'
 
 import packageManager from './package-manager'
 
@@ -61,8 +62,8 @@ async function routeFeatures(argv) {
       message: 'Select the features you want to configure:',
       choices: [
         { name: 'prettier' },
+        { name: 'eslint' },
         // { name: 'jest' },
-        // { name: 'eslint' }
       ],
     },
   ])
@@ -70,16 +71,21 @@ async function routeFeatures(argv) {
   if (features.includes('prettier')) {
     await prettier.handler(argv)
   }
+
+  if (features.includes('eslint')) {
+    await eslint.handler(argv)
+  }
 }
 
 // TODO: add some colors to the help page
 async function run() {
-  return yargs
+  const argv = yargs
     .scriptName('ouxe')
     .usage('Usage: $0 [configuration] [args]')
     .middleware([installDependencies])
     .command('*', 'Choose from some configuration options', {}, routeFeatures)
     .command(prettier)
+    .command(eslint)
     .options({
       'skip-install': {
         type: 'boolean',
@@ -89,6 +95,10 @@ async function run() {
     .demandCommand()
     .recommendCommands()
     .help().argv
+
+  console.log('🎉  Enjoy your configured workplace!')
+
+  return argv
 }
 
 run()

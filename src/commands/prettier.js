@@ -142,5 +142,4 @@ export const handler = async ({ packager, ...argv }) => {
   }
 
   console.log('✅  Your project now has prettier configured!')
-  console.log('🎉  Enjoy your configured workplace!')
 }

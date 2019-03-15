@@ -103,8 +103,6 @@ async function run() {
     .recommendCommands()
     .help().argv
 
-  console.log('🎉  Enjoy your configured workplace!')
-
   return argv
 }
 

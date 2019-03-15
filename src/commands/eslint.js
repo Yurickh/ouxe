@@ -7,7 +7,16 @@ export const command = ['eslint', 'e']
 
 export const describe = 'Opinionated eslint configuration'
 
-export const builder = {}
+export const builder = yargs =>
+  yargs
+    .options({
+      'lint-staged': {
+        alias: 'l',
+        type: 'boolean',
+        describe: 'Setup eslint to run on every commit',
+      },
+    })
+    .group(['l'], 'Modifiers:')
 
 export const handler = async ({ packager, ...argv }) => {
   const preferences = {

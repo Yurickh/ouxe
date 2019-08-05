@@ -1,7 +1,5 @@
 import * as inquirer from 'inquirer'
-import gStatus from 'g-status'
 
-import runProcess from '../run-process'
 import copyTemplate from '../copy-template'
 import * as lintStagedRC from '../lint-staged-rc'
 
@@ -16,12 +14,6 @@ export const builder = yargs =>
         alias: 'w',
         type: 'boolean',
         describe: 'Run prettier on all files of the project',
-      },
-      commit: {
-        alias: 'c',
-        type: 'boolean',
-        requiresArg: 'write',
-        describe: 'Commit written changes. Depends on --write',
       },
       'lint-staged': {
         alias: 'l',
@@ -42,13 +34,6 @@ export const handler = async ({ packager, ...argv }) => {
           '💅  Do you want to immediately run prettier on all files in the project?',
         default: false,
         when: !argv.write,
-      },
-      {
-        type: 'confirm',
-        name: 'commit',
-        message: '🐙  And how about making a commit with these changes?',
-        default: true,
-        when: ans => !argv.commit && ans.write,
       },
       {
         type: 'confirm',
@@ -82,14 +67,6 @@ export const handler = async ({ packager, ...argv }) => {
   }
 
   console.log('✨  Creating prettier configuration')
-  const currentModified = await gStatus()
-
-  if (preferences.commit && currentModified.length !== 0) {
-    console.log(
-      "🐙  Don't worry about your unfinished work, we're storing it in a stash",
-    )
-    await runProcess('git stash save -u', 'Stash before running prettier')
-  }
 
   copyTemplate('.prettierrc.json')
   copyTemplate('.prettierignore')
@@ -107,31 +84,6 @@ export const handler = async ({ packager, ...argv }) => {
         }]`,
       )
       process.exit(1)
-    }
-  }
-
-  if (preferences.commit) {
-    const afterPrettierModifier = await gStatus()
-
-    if (afterPrettierModifier.length === 0) {
-      console.log(
-        '💅  We really wanted to commit, but your files are already pretty!',
-      )
-    } else {
-      try {
-        await runProcess('git add .')
-        await runProcess(
-          'git commit -m',
-          '💅  Run prettier in all files of the project',
-        )
-      } catch (exception) {
-        console.error(
-          `🚨  There was an error while commiting modifications during [${
-            exception.command
-          }]`,
-        )
-        process.exit(1)
-      }
     }
   }
 

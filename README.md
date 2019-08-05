@@ -36,10 +36,6 @@ By default, it will create a `.prettierignore` and a `.prettierrc` with preloade
 
 Run prettier on all files of the project.
 
-#### --commit, -c
-
-Commit written changes. Depends on `--write`.
-
 #### --lint-staged, -l
 
 Setup prettier to run on every commit with husky and lint-staged.

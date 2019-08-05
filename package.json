@@ -21,7 +21,6 @@
     "@babel/core": "^7.3.4",
     "cross-spawn": "^6.0.5",
     "fs-extra": "^7.0.1",
-    "g-status": "^2.0.2",
     "inquirer": "^6.2.2",
     "yargs": "^13.2.2"
   },

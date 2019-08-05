@@ -45,7 +45,8 @@ export const handler = async ({ packager, ...argv }) => {
     ])),
   }
 
-  const dependencies = ['prettier']
+  // Use better version of prettier
+  const dependencies = ['prettier@npm:@btmills/prettier']
 
   if (preferences.lintStaged) {
     dependencies.push('husky')
@@ -58,9 +59,7 @@ export const handler = async ({ packager, ...argv }) => {
       await packager.add({ dev: true, dependencies })
     } catch (exception) {
       console.error(
-        `🚨  There was an error while installing dependencies during [${
-          exception.command
-        }]`,
+        `🚨  There was an error while installing dependencies during [${exception.command}]`,
       )
       process.exit(1)
     }
@@ -79,9 +78,7 @@ export const handler = async ({ packager, ...argv }) => {
       )
     } catch (exception) {
       console.error(
-        `🚨  There was an error while running prettier during [${
-          exception.command
-        }]`,
+        `🚨  There was an error while running prettier during [${exception.command}]`,
       )
       process.exit(1)
     }

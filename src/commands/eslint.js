@@ -45,9 +45,7 @@ export const handler = async ({ packager, ...argv }) => {
       await packager.add({ dev: true, dependencies })
     } catch (exception) {
       console.error(
-        `🚨  There was an error while installing dependencies during [${
-          exception.command
-        }]`,
+        `🚨  There was an error while installing dependencies during [${exception.command}]`,
       )
       process.exit(1)
     }

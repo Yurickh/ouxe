@@ -50,7 +50,7 @@ Prettier is a great code formatter. It produces readable and organized code most
 
 You'll notice I chose to override three configs for it: `semi`, `trailingComma` and `singleQuote`. This is basically personal preference, and I agree with most other prettier patterns.
 
-If I could, I would change the way it organizes some operators, though. Check https://github.com/prettier/prettier/pull/5108.
+You'll notice that rather than installing the prettier npm package, we actually alias it through [this fork](https://www.npmjs.com/package/@btmills/prettier). This is done so operators are aligned in the beggining of the line, rather than in the end, and the prettier team has been [pretty vocal](https://github.com/prettier/prettier/pull/5108#issuecomment-423278455) about it not coming to a prettier version.
 
 ## Running locally
 

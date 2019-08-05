@@ -19,6 +19,20 @@ export const builder = yargs =>
     .group(['l'], 'Modifiers:')
 
 export const handler = async ({ packager, ...argv }) => {
+  const devOptions = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'continue',
+      message:
+        '⚠️  This option is still under development. You might get to strange places. Are you sure you want to continue?',
+      default: false,
+    },
+  ])
+
+  if (!devOptions.continue) {
+    process.exit(1)
+  }
+
   const preferences = {
     ...argv,
     ...(await inquirer.prompt([

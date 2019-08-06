@@ -1,8 +1,23 @@
 {
-  "parser": "babel-eslint",
-  "extends": ["eslint:recommended", "prettier"],
-  "env": { "node": true, "es6": true },
+  "parser": "@typescript-eslint/parser",
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier",
+    "prettier/@typescript-eslint"
+  ],
+  "env": {
+    "node": true,
+    "es6": true
+  },
   "rules": {
-    "no-console": 0
+    "no-console": 0,
+    "@typescript-eslint/explicit-function-return-type": [
+      "error",
+      {
+        "allowExpressions": true
+      }
+    ]
   }
 }

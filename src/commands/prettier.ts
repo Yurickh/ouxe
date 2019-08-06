@@ -1,13 +1,20 @@
 import * as inquirer from 'inquirer'
+import { Argv, Arguments } from 'yargs'
 
-import copyTemplate from '../copy-template'
-import * as lintStagedRC from '../lint-staged-rc'
+import copyTemplate from '../helpers/copy-template'
+import * as lintStagedRC from '../helpers/lint-staged-rc'
+import installDependencies from '../helpers/install-dependencies'
+
+interface PrettierArguments {
+  write: boolean
+  lintStaged: boolean
+}
 
 export const command = ['prettier', 'p']
 
 export const describe = 'Opinionated prettier configuration'
 
-export const builder = yargs =>
+export const builder = (yargs: Argv): Argv =>
   yargs
     .options({
       write: {
@@ -23,7 +30,11 @@ export const builder = yargs =>
     })
     .group(['w', 'c', 'l'], 'Modifiers:')
 
-export const handler = async ({ packager, ...argv }) => {
+export const handler = async (
+  argv: Arguments<PrettierArguments>,
+): Promise<void> => {
+  const packager = await installDependencies(argv)
+
   const preferences = {
     ...argv,
     ...(await inquirer.prompt([

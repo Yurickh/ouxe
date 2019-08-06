@@ -1,13 +1,19 @@
 import * as inquirer from 'inquirer'
+import { Argv, Arguments } from 'yargs'
 
-import copyTemplate from '../copy-template'
-import * as lintStagedRC from '../lint-staged-rc'
+import copyTemplate from '../helpers/copy-template'
+import * as lintStagedRC from '../helpers/lint-staged-rc'
+import installDependencies from '../helpers/install-dependencies'
+
+interface EslintArguments {
+  lintStaged: boolean
+}
 
 export const command = ['eslint', 'e']
 
 export const describe = 'Opinionated eslint configuration'
 
-export const builder = yargs =>
+export const builder = (yargs: Argv): Argv =>
   yargs
     .options({
       'lint-staged': {
@@ -18,7 +24,10 @@ export const builder = yargs =>
     })
     .group(['l'], 'Modifiers:')
 
-export const handler = async ({ packager, ...argv }) => {
+export const handler = async (
+  argv: Arguments<EslintArguments>,
+): Promise<void> => {
+  const packager = await installDependencies(argv)
   const devOptions = await inquirer.prompt([
     {
       type: 'confirm',

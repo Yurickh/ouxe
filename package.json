@@ -4,6 +4,9 @@
   "main": "lib/ouxe.js",
   "module": "lib/ouxe.mjs",
   "source": "src/index.ts",
+  "engines": {
+    "node": "^8.12.0 || >=9.7.0"
+  },
   "bin": {
     "ouxe": "./lib/ouxe.js"
   },

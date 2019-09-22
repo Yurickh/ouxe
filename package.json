@@ -18,6 +18,7 @@
     "ouxe": "node ./lib/ouxe.js"
   },
   "dependencies": {
+    "@types/jest": "^24.0.17",
     "cross-spawn": "^6.0.5",
     "fs-extra": "^7.0.1",
     "inquirer": "^6.2.2",

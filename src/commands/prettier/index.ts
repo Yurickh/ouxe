@@ -1,9 +1,9 @@
 import * as inquirer from 'inquirer'
 import { Argv, Arguments } from 'yargs'
 
-import copyTemplate from '../helpers/copy-template'
-import * as lintStagedRC from '../helpers/lint-staged-rc'
-import installDependencies from '../helpers/install-dependencies'
+import copyTemplate from '../../helpers/copy-template'
+import * as lintStagedRC from '../../helpers/lint-staged-rc'
+import installDependencies from '../../helpers/install-dependencies'
 
 interface PrettierArguments {
   write: boolean
@@ -28,7 +28,7 @@ export const builder = (yargs: Argv): Argv =>
         describe: 'Setup prettier to run on every commit',
       },
     })
-    .group(['w', 'c', 'l'], 'Modifiers:')
+    .group(['w', 'l'], 'Modifiers:')
 
 export const handler = async (
   argv: Arguments<PrettierArguments>,

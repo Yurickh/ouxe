@@ -1,9 +1,9 @@
 import * as inquirer from 'inquirer'
 import { Argv, Arguments } from 'yargs'
 
-import copyTemplate from '../helpers/copy-template'
-import * as lintStagedRC from '../helpers/lint-staged-rc'
-import installDependencies from '../helpers/install-dependencies'
+import copyTemplate from '../../helpers/copy-template'
+import * as lintStagedRC from '../../helpers/lint-staged-rc'
+import installDependencies from '../../helpers/install-dependencies'
 
 interface EslintArguments {
   lintStaged: boolean

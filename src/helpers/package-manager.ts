@@ -13,12 +13,28 @@ export interface PackageManager {
   run: (proc: string, ...args: string[]) => Promise<void>
 }
 
-export default function packageManager(manager): PackageManager {
-  const isYarn = manager === packageManager.YARN
-  const name = isYarn ? 'yarn' : 'npm'
-  const add = isYarn ? 'add' : 'install'
-  const dashDev = isYarn ? '--dev' : '--save-dev'
-  const run = 'run'
+export enum PackagerName {
+  NPM,
+  YARN,
+}
+
+const packagerConfig = {
+  [PackagerName.NPM]: {
+    name: 'npm',
+    add: 'install',
+    dashDev: '--save-dev',
+    run: 'run',
+  },
+  [PackagerName.YARN]: {
+    name: 'yarn',
+    add: 'add',
+    dashDev: '--dev',
+    run: 'run',
+  },
+}
+
+export default function packageManager(manager: PackagerName): PackageManager {
+  const { name, add, dashDev, run } = packagerConfig[manager]
 
   return {
     init: () => runProcess(`${name} init`),
@@ -28,6 +44,3 @@ export default function packageManager(manager): PackageManager {
     run: (proc, ...args) => runProcess(`${name} ${run} ${proc}`, ...args),
   }
 }
-
-packageManager.YARN = Symbol('yarn')
-packageManager.NPM = Symbol('npm')

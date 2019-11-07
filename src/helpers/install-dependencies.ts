@@ -1,7 +1,7 @@
 import * as fs from 'fs-extra'
 import * as inquirer from 'inquirer'
 
-import packageManager, { PackageManager } from './package-manager'
+import packageManager, { PackageManager, PackagerName } from './package-manager'
 
 export default async function installDependencies(
   argv,
@@ -22,8 +22,8 @@ export default async function installDependencies(
 
   const packager = packageManager(
     answers.packageManager
-      || (hasYarnLock && packageManager.YARN)
-      || (hasPackageLock && packageManager.NPM),
+      || (hasYarnLock && PackagerName.YARN)
+      || (hasPackageLock && PackagerName.NPM),
   )
 
   if (!fs.existsSync('./package.json')) {

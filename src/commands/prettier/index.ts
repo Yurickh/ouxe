@@ -8,6 +8,8 @@ import installDependencies from '../../helpers/install-dependencies'
 interface PrettierArguments {
   write: boolean
   lintStaged: boolean
+  skipInstall: boolean
+  skipCongrats: boolean
 }
 
 export const command = ['prettier', 'p']

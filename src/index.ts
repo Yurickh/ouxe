@@ -12,11 +12,7 @@ async function routeFeatures(argv): Promise<void> {
       type: 'checkbox',
       name: 'features',
       message: 'Select the features you want to configure:',
-      choices: [
-        { name: 'prettier' },
-        { name: 'eslint' },
-        // { name: 'jest' },
-      ],
+      choices: [{ name: 'prettier' }, { name: 'eslint' }],
     },
   ])
 
@@ -31,7 +27,6 @@ async function routeFeatures(argv): Promise<void> {
     await eslint.handler(argv)
   }
 
-  // this is the time of our lives
   console.log('🎉  Enjoy your configured workplace!')
 }
 

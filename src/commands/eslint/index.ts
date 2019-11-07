@@ -7,6 +7,8 @@ import installDependencies from '../../helpers/install-dependencies'
 
 interface EslintArguments {
   lintStaged: boolean
+  skipInstall: boolean
+  skipCongrats: boolean
 }
 
 export const command = ['eslint', 'e']

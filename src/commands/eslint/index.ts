@@ -82,7 +82,7 @@ export const handler = async (
   if (preferences.lintStaged) {
     copyTemplate('.huskyrc.json')
     // we can't just copy the template because prettier might have added configs to it
-    lintStagedRC.addEslint()
+    await lintStagedRC.addEslint()
   }
 
   console.log('✅  Your project now has eslint configured!')

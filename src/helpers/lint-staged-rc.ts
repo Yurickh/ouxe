@@ -1,5 +1,6 @@
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import installDependencies from './install-dependencies'
 
 const targetFile = './.lintstagedrc.json'
 
@@ -17,15 +18,23 @@ const getTargetConfig = (feature: Feature): Config =>
     path.join(__dirname, '..', 'templates', `${feature}.lintstagedrc.json`),
   )
 
-const mergeJSON = (featureConfig: Config, baseConfig: Config): void =>
+const mergeJSON = async (
+  featureConfig: Config,
+  baseConfig: Config,
+): Promise<void> => {
+  const packager = await installDependencies({ skipInstall: true })
+
   fs.writeJSONSync(
     targetFile,
     { ...baseConfig, ...featureConfig },
     { spaces: 2 },
   )
 
-const mergeFeature = (feature: Feature): void =>
+  await packager.run('prettier --write', targetFile)
+}
+
+const mergeFeature = (feature: Feature): Promise<void> =>
   mergeJSON(getTargetConfig(feature), getBaseConfig())
 
-export const addEslint = (): void => mergeFeature('eslint')
-export const addPrettier = (): void => mergeFeature('prettier')
+export const addEslint = (): Promise<void> => mergeFeature('eslint')
+export const addPrettier = (): Promise<void> => mergeFeature('prettier')

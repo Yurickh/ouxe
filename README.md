@@ -9,12 +9,12 @@ It ~is~ _will be_ able to handle:
 - [eslint](https://eslint.org) (partially available)
 - [jest](https://jestjs.io) (not available yet)
 - builders (not available yet)
-  -- [microbundle](https://github.com/developit/microbundle) for packages
-  -- [parcel](https://parceljs.org) for apps
-  -- [babel](https://babeljs.io) for something in between
+  - [microbundle](https://github.com/developit/microbundle) for packages
+  - [parcel](https://parceljs.org) for apps
+  - [babel](https://babeljs.io) for something in between
 - frameworks (not available yet)
-  -- [React](https://reactjs.org) for apps
-  -- [yargs](http://yargs.js.org) for clis
+  - [React](https://reactjs.org) for apps
+  - [yargs](http://yargs.js.org) for clis
 
 Running linters and prettier on precommit with [husky](https://github.com/typicode/husky).
 

@@ -79,7 +79,7 @@ export const handler = async (
   console.log('✨  Creating eslint configuration')
   // TODO: create templates
   // copyTemplate('.eslintrc')
-  // copyTemplate('.eslintignore')
+  copyTemplate('.eslintignore')
 
   if (preferences.lintStaged) {
     copyTemplate('.huskyrc.json')

@@ -3,8 +3,12 @@ import * as inquirer from 'inquirer'
 
 import packageManager, { PackageManager, PackagerName } from './package-manager'
 
+interface Argv {
+  skipInstall?: boolean
+}
+
 export default async function installDependencies(
-  argv,
+  argv: Argv,
 ): Promise<PackageManager> {
   const hasYarnLock = fs.existsSync('./yarn.lock')
   const hasPackageLock = fs.existsSync('./package-lock.json')

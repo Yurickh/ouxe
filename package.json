@@ -14,11 +14,11 @@
   "license": "MIT",
   "repository": "https://github.com/Yurickh/ouxe",
   "scripts": {
-    "test": "jest src",
+    "test": "jest",
     "lint": "eslint .",
     "build": "microbundle",
     "start": "microbundle watch",
-    "ouxe": "node ./lib/ouxe.js"
+    "ouxe": "babel-node --extensions '.ts' -- ./src/index.ts"
   },
   "dependencies": {
     "cross-spawn": "^6.0.5",
@@ -28,8 +28,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
+    "@babel/node": "^7.7.0",
     "@babel/preset-env": "^7.5.5",
     "@babel/preset-typescript": "^7.3.3",
+    "@rauschma/stringio": "^1.4.0",
     "@types/fs-extra": "^8.0.1",
     "@types/inquirer": "^6.5.0",
     "@types/jest": "^24.0.22",

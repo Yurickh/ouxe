@@ -1,7 +1,6 @@
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import spawn from 'cross-spawn'
-import { streamWrite, readableToString } from '@rauschma/stringio'
+import clifford from 'clifford'
 
 interface CLIRunnerOptions {
   readDelimiter?: string | RegExp
@@ -16,65 +15,9 @@ interface CLIInstance {
 
 const OUXE = require.resolve('.')
 
-function runOuxe(
-  args = [],
-  options: CLIRunnerOptions = { debug: false, readDelimiter: '\n' },
-): CLIInstance {
-  const cli = spawn(
-    'babel-node',
-    ['--extensions', '.ts', '--', OUXE, ...args],
-    {
-      stdio: 'pipe',
-    },
-  )
-
-  cli.stdin.on('data', data => {
-    if (options.debug) {
-      console.log('[stdin]: ', data.toString(), '[/stdin]')
-    }
-  })
-
-  cli.stdout.on('data', data => {
-    if (options.debug) {
-      console.log('[stdout]: ', data.toString(), '[/stdout]')
-    }
-  })
-
-  cli.stderr.on('data', data => {
-    if (options.debug) {
-      console.log('[stderr]: ', data.toString(), '[/stderr]')
-    }
-  })
-
-  async function* readLine(): AsyncGenerator<string> {
-    let output = ''
-
-    for await (const chunk of cli.stdout) {
-      output += chunk.toString()
-
-      const delimiter = new RegExp(options.readDelimiter)
-      if (delimiter.test(output)) {
-        yield output
-        output = ''
-      }
-    }
-
-    yield output
-  }
-
-  const outputIterator = readLine()[Symbol.asyncIterator]()
-
-  return {
-    type: async (string: string | Buffer | Uint8Array) =>
-      streamWrite(cli.stdin, `${string}\n`),
-    read: () => readableToString(cli.stdout),
-    readLine: () => outputIterator.next().then(({ value }) => value),
-  }
-}
-
 describe('ouxe', () => {
   it('runs help', async () => {
-    const cli = runOuxe(['--help'])
+    const cli = clifford(OUXE, ['--help'])
 
     const output = await cli.read()
 
@@ -99,7 +42,7 @@ describe('ouxe', () => {
       `,
       )
 
-      const cli = runOuxe(['prettier', '--skip-install'], {
+      const cli = clifford(OUXE, ['prettier', '--skip-install'], {
         readDelimiter: /\(y\/n\)/i,
       })
 

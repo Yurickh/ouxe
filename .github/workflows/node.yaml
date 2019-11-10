@@ -1,6 +1,9 @@
-name: Build and test
+name: CI
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   build:
@@ -17,13 +20,27 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - name: install and build
-        run: |
-          yarn install
-          yarn build
-        env:
-          CI: true
-      - name: test
+      - name: Install
+        run: yarn install
+      - name: Build
+        run: yarn build
+      - name: Test
         run: yarn test
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 13.x
+      - name: Install
+        run: yarn install
+      - name: Build
+        run: yarn build
+      - name: Release
         env:
-          CI: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release

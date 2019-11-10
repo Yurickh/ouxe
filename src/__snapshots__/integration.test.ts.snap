@@ -8,3 +8,18 @@ exports[`ouxe running prettier writes all files 1`] = `
 }
 "
 `;
+
+exports[`ouxe runs help 1`] = `
+"Usage: ouxe [configuration] [args]
+
+Commands:
+  ouxe           Choose from some configuration options                [default]
+  ouxe prettier  Opinionated prettier configuration                 [aliases: p]
+  ouxe eslint    Opinionated eslint configuration                   [aliases: e]
+
+Options:
+  --version       Show version number                                  [boolean]
+  --skip-install  Skip installation steps. Ideal for the unconnected.  [boolean]
+  --help          Show help                                            [boolean]
+"
+`;

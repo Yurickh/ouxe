@@ -19,7 +19,10 @@ export default async function installDependencies(
       type: 'list',
       name: 'packageManager',
       message: 'Which package manager do you intend to use?',
-      choices: [{ name: 'yarn' }, { name: 'npm' }],
+      choices: [
+        { name: 'yarn', value: PackagerName.YARN },
+        { name: 'npm', value: PackagerName.NPM },
+      ],
       when: noLock,
     },
   ])

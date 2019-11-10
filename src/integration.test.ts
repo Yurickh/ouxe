@@ -1,21 +1,24 @@
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import clifford from 'clifford'
-
-interface CLIRunnerOptions {
-  readDelimiter?: string | RegExp
-  debug?: boolean
-}
-
-interface CLIInstance {
-  type(string: string | Buffer | Uint8Array): Promise<void>
-  read(): Promise<string>
-  readLine(): Promise<string>
-}
+import reserveFile from './helpers/reserve-file'
 
 const OUXE = require.resolve('.')
 
+const rootPath = (pathName: string): string =>
+  path.join(__dirname, '..', pathName)
+
 describe('ouxe', () => {
+  let returnFile
+
+  beforeEach(() => {
+    returnFile = () => {}
+  })
+
+  afterEach(() => {
+    returnFile()
+  })
+
   it('runs help', async () => {
     const cli = clifford(OUXE, ['--help'])
 
@@ -24,9 +27,33 @@ describe('ouxe', () => {
     expect(output).toMatchSnapshot()
   })
 
+  it('prompts for a packager if none is identified', async () => {
+    returnFile = reserveFile(rootPath('yarn.lock'))
+
+    const cli = clifford(OUXE, ['prettier', '--skip-install'], {
+      readDelimiter: /\?/,
+    })
+
+    const promptPackager = await cli.readLine()
+    expect(promptPackager).toMatch(
+      'Which package manager do you intend to use?',
+    )
+    // press enter for yarn
+    await cli.type('')
+    await cli.readLine()
+
+    const promptWrite = await cli.readLine()
+    expect(promptWrite).toMatch(
+      'Do you want to immediately run prettier on all files in the project?',
+    )
+
+    cli.kill()
+  })
+
   describe('running prettier', () => {
-    fit('writes all files', async () => {
+    it('writes all files', async () => {
       const writableFile = path.join(__dirname, 'fixtures/write-prettier.js')
+      returnFile = () => fs.removeSync(writableFile)
 
       fs.writeFileSync(
         writableFile,
@@ -60,10 +87,10 @@ describe('ouxe', () => {
       await cli.type('n')
       await cli.readLine()
 
+      // read until prettier is done running
       await cli.readLine()
 
       expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()
-      fs.removeSync(writableFile)
     })
   })
 })

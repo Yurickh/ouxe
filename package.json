@@ -20,7 +20,7 @@
   "scripts": {
     "test": "jest",
     "lint": "eslint .",
-    "build": "microbundle",
+    "build": "microbundle --target node",
     "start": "microbundle watch",
     "ouxe": "babel-node --extensions '.ts' -- ./src/index.ts",
     "semantic-release": "semantic-release"

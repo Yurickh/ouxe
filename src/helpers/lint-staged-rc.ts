@@ -1,6 +1,6 @@
 import * as fs from 'fs-extra'
-import * as path from 'path'
 import installDependencies from './install-dependencies'
+import templateFolder from '../template-folder'
 
 const targetFile = './.lintstagedrc.json'
 
@@ -14,9 +14,7 @@ const getBaseConfig = (): Config =>
   fs.existsSync(targetFile) ? fs.readJSONSync(targetFile) : {}
 
 const getTargetConfig = (feature: Feature): Config =>
-  fs.readJSONSync(
-    path.join(__dirname, '..', 'templates', `${feature}.lintstagedrc.json`),
-  )
+  fs.readJSONSync(templateFolder(`${feature}.lintstagedrc.json`))
 
 const mergeJSON = async (
   featureConfig: Config,

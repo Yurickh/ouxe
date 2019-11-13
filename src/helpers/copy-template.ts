@@ -1,6 +1,6 @@
 import * as fs from 'fs-extra'
-import * as path from 'path'
+import templateFolder from '../template-folder'
 
 export default function copyTemplate(name: string): void {
-  fs.copySync(path.join(__dirname, '..', '..', 'templates', name), `./${name}`)
+  fs.copySync(templateFolder(name), `${process.cwd()}/${name}`)
 }

@@ -5,6 +5,14 @@ import * as yargs from 'yargs'
 
 import * as prettier from './commands/prettier'
 import * as eslint from './commands/eslint'
+import * as documents from './commands/documents'
+
+// Register the autocomplete plugin
+inquirer.prompt.registerPrompt(
+  'autocomplete',
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  require('inquirer-autocomplete-prompt'),
+)
 
 async function routeFeatures(argv): Promise<void> {
   const { features } = await inquirer.prompt([
@@ -12,7 +20,7 @@ async function routeFeatures(argv): Promise<void> {
       type: 'checkbox',
       name: 'features',
       message: 'Select the features you want to configure:',
-      choices: [{ name: 'prettier' }, { name: 'eslint' }],
+      choices: ['prettier', 'eslint', 'documents'],
     },
   ])
 
@@ -27,6 +35,10 @@ async function routeFeatures(argv): Promise<void> {
     await eslint.handler(argv)
   }
 
+  if (features.includes('documents')) {
+    await documents.handler(argv)
+  }
+
   console.log('🎉  Enjoy your configured workplace!')
 }
 
@@ -39,6 +51,7 @@ async function run(): Promise<yargs.Arguments> {
     .command('*', 'Choose from some configuration options', {}, routeFeatures)
     .command(prettier)
     .command(eslint)
+    .command(documents)
     .options({
       'skip-install': {
         type: 'boolean',

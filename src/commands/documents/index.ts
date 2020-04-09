@@ -1,6 +1,8 @@
 import { Argv, Arguments } from 'yargs'
 import inquirer from 'inquirer'
 import { getLicense, findLicense } from 'license'
+import covgen from 'covgen'
+
 import pkg from '../../../package.json'
 import createFile from '../../helpers/create-file'
 
@@ -49,7 +51,10 @@ export const handler = async (
     },
   ])
 
-  if (argv.license || documents.includes('license')) {
+  console.log({ argv })
+  console.log({ documents })
+
+  if (argv.license || documents?.includes('license')) {
     const { selectedLicense, author } = await inquirer.prompt([
       {
         type: 'autocomplete',
@@ -70,5 +75,17 @@ export const handler = async (
     const licenseText = getLicense(selectedLicense, { author, year })
 
     createFile('./LICENSE', licenseText)
+  }
+
+  if (argv.codeOfConduct || documents?.includes('coc')) {
+    const { contact } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'contact',
+        message: '📞 Please provide an email for contact',
+      },
+    ])
+
+    await covgen(contact, './CODE_OF_CONDUCT.md').catch(console.log)
   }
 }

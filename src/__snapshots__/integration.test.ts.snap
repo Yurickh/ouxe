@@ -4,7 +4,7 @@ exports[`ouxe running prettier writes all files 1`] = `
 "export default function potato() {
   let a, b, c
 
-  ;[a, b, c].forEach(x => 0)
+  ;[a, b, c].forEach((x) => 0)
 }
 "
 `;

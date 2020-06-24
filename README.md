@@ -1,5 +1,9 @@
 # Ouxe
 
+![CI](https://github.com/Yurickh/ouxe/workflows/CI/badge.svg)
+![npm version](https://img.shields.io/npm/v/ouxe?label=npm+version&logo=npm)
+[![MIT](https://img.shields.io/github/license/Yurickh/ouxe)](https://github.com/Yurickh/ouxe/blob/master/LICENSE)
+
 Basic configuration tool for my common setup.
 
 It ~is~ _will be_ able to handle:

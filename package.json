@@ -1,6 +1,6 @@
 {
   "name": "ouxe",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "main": "lib/ouxe.js",
   "module": "lib/ouxe.mjs",
   "source": "src/index.ts",

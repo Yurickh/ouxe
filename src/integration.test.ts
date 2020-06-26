@@ -55,8 +55,6 @@ describe('ouxe', () => {
     expect(promptWrite).toMatch(
       'Do you want to immediately run prettier on all files in the project?',
     )
-
-    cli.kill()
   })
 
   describe('running prettier', () => {
@@ -94,10 +92,8 @@ describe('ouxe', () => {
       expect(promptPrecommit).toMatch('precommit')
 
       await cli.type('n')
-      await cli.readLine()
 
-      // read until prettier is done running
-      await cli.readLine()
+      await cli.readUntil(/Enjoy your configured workplace/)
 
       expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()
     })

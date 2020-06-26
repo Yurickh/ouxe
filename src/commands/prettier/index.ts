@@ -4,19 +4,18 @@ import { Argv, Arguments } from 'yargs'
 import copyTemplate from '../../helpers/copy-template'
 import * as lintStagedRC from '../../helpers/lint-staged-rc'
 import installDependencies from '../../helpers/install-dependencies'
+import { RootArgs } from '../../helpers/root-args'
 
-interface PrettierArguments {
-  write: boolean
-  lintStaged: boolean
-  skipInstall: boolean
-  skipCongrats: boolean
+export interface Args extends RootArgs {
+  write: boolean | undefined
+  lintStaged: boolean | undefined
 }
 
 export const command = ['prettier', 'p']
 
 export const describe = 'Opinionated prettier configuration'
 
-export const builder = (yargs: Argv): Argv =>
+export const builder = (yargs: Argv<RootArgs>): Argv<Args> =>
   yargs
     .options({
       write: {
@@ -24,7 +23,7 @@ export const builder = (yargs: Argv): Argv =>
         type: 'boolean',
         describe: 'Run prettier on all files of the project',
       },
-      'lint-staged': {
+      lintStaged: {
         alias: 'l',
         type: 'boolean',
         describe: 'Setup prettier to run on every commit',
@@ -32,9 +31,7 @@ export const builder = (yargs: Argv): Argv =>
     })
     .group(['w', 'l'], 'Modifiers:')
 
-export const handler = async (
-  argv: Arguments<PrettierArguments>,
-): Promise<void> => {
+export const handler = async (argv: Arguments<Args>): Promise<void> => {
   const packager = await installDependencies(argv)
 
   const preferences = {

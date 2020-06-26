@@ -4,21 +4,20 @@ import { Argv, Arguments } from 'yargs'
 import copyTemplate from '../../helpers/copy-template'
 import * as lintStagedRC from '../../helpers/lint-staged-rc'
 import installDependencies from '../../helpers/install-dependencies'
+import { RootArgs } from '../../helpers/root-args'
 
-interface EslintArguments {
-  lintStaged: boolean
-  skipInstall: boolean
-  skipCongrats: boolean
+export interface Args extends RootArgs {
+  lintStaged: boolean | undefined
 }
 
 export const command = ['eslint', 'e']
 
 export const describe = 'Opinionated eslint configuration'
 
-export const builder = (yargs: Argv): Argv =>
+export const builder = (yargs: Argv<RootArgs>): Argv<Args> =>
   yargs
     .options({
-      'lint-staged': {
+      lintStaged: {
         alias: 'l',
         type: 'boolean',
         describe: 'Setup eslint to run on every commit',
@@ -26,9 +25,7 @@ export const builder = (yargs: Argv): Argv =>
     })
     .group(['l'], 'Modifiers:')
 
-export const handler = async (
-  argv: Arguments<EslintArguments>,
-): Promise<void> => {
+export const handler = async (argv: Arguments<Args>): Promise<void> => {
   const packager = await installDependencies(argv)
   const devOptions = await inquirer.prompt([
     {

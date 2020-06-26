@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "esModuleInterop": true,
-    "resolveJsonModule": true
-  }
+    "rootDir": ".",
+    "outDir": ".",
+    "resolveJsonModule": true,
+    "composite": true,
+    "esModuleInterop": true
+  },
+  "files": ["package.json"]
 }

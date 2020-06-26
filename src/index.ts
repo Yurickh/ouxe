@@ -6,6 +6,7 @@ import * as yargs from 'yargs'
 import * as prettier from './commands/prettier'
 import * as eslint from './commands/eslint'
 import * as documents from './commands/documents'
+import { RootArgs } from './helpers/root-args'
 
 // Register the autocomplete plugin
 inquirer.prompt.registerPrompt(
@@ -14,7 +15,7 @@ inquirer.prompt.registerPrompt(
   require('inquirer-autocomplete-prompt'),
 )
 
-async function routeFeatures(argv): Promise<void> {
+async function routeFeatures(argv: yargs.Arguments<RootArgs>): Promise<void> {
   const { features } = await inquirer.prompt([
     {
       type: 'checkbox',
@@ -43,21 +44,26 @@ async function routeFeatures(argv): Promise<void> {
 }
 
 // TODO: add some colors to the help page
-async function run(): Promise<yargs.Arguments> {
+async function run() {
   // If we don't store the result, this will get tree-shaked!
   const argv = yargs
     .scriptName('ouxe')
     .usage('Usage: $0 [configuration] [args]')
-    .command('*', 'Choose from some configuration options', {}, routeFeatures)
-    .command(prettier)
-    .command(eslint)
-    .command(documents)
+    .command(
+      '*',
+      'Choose from some configuration options',
+      () => ({}),
+      routeFeatures,
+    )
     .options({
-      'skip-install': {
+      skipInstall: {
         type: 'boolean',
         describe: 'Skip installation steps. Ideal for the unconnected.',
       },
     })
+    .command(prettier)
+    .command(eslint)
+    .command(documents)
     .demandCommand()
     .recommendCommands()
     .help().argv

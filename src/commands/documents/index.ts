@@ -5,12 +5,11 @@ import covgen from 'covgen'
 
 import pkg from '../../../package.json'
 import createFile from '../../helpers/create-file'
+import { RootArgs } from '../../helpers/root-args'
 
-interface DocumentsArguments {
-  coc: boolean
-  license: boolean
-  skipCongrats: boolean
-  skipInstall: boolean
+export interface Args extends RootArgs {
+  codeOfConduct: boolean | undefined
+  license: boolean | undefined
 }
 
 export const command = ['documents', 'd']
@@ -18,10 +17,10 @@ export const command = ['documents', 'd']
 export const describe =
   'Basic legal documents, like Code of Conduct and License'
 
-export const builder = (yargs: Argv): Argv =>
+export const builder = (yargs: Argv<RootArgs>): Argv<Args> =>
   yargs
     .options({
-      'code-of-conduct': {
+      codeOfConduct: {
         alias: 'c',
         type: 'boolean',
         describe: 'Creates a CODE_OF_CONDUCT.md file',
@@ -34,9 +33,7 @@ export const builder = (yargs: Argv): Argv =>
     })
     .group(['c', 'l'], 'Options:')
 
-export const handler = async (
-  argv: Arguments<DocumentsArguments>,
-): Promise<void> => {
+export const handler = async (argv: Arguments<Args>): Promise<void> => {
   const { documents } = await inquirer.prompt([
     {
       type: 'checkbox',
@@ -57,7 +54,8 @@ export const handler = async (
         type: 'autocomplete',
         name: 'selectedLicense',
         message: '📄  Please choose which license you want for your project:',
-        source: async (_answers, input: string) => findLicense(input || ''),
+        source: async (_answers: any, input: string) =>
+          findLicense(input || ''),
       },
       {
         type: 'input',

@@ -5,14 +5,49 @@ import reserveFile from './helpers/reserve-file'
 
 const OUXE = require.resolve('.')
 
+// TODO: consider moving these to clifford
+const clearColorMarkers = (string: string): string =>
+  // eslint-disable-next-line no-control-regex
+  string.replace(/\x1b\[\d{0,3}[\w]/g, '').replace(/^\s/g, '')
+
+type Clifford = any
+
+type ReadUntilOptions = {
+  stopAppearing?: boolean
+  log?: boolean
+}
+
+const readUntil = async (
+  cli: Clifford,
+  regex: RegExp,
+  options: ReadUntilOptions = {},
+): Promise<string> => {
+  let waiting: string
+  let appears = false
+
+  do {
+    waiting = await cli.readLine()
+    appears = regex.test(waiting)
+
+    if (options.log) {
+      console.log({
+        waiting,
+        appears,
+      })
+    }
+  } while (options.stopAppearing ? appears : !appears)
+
+  return waiting
+}
+
 const rootPath = (pathName: string): string =>
   path.join(__dirname, '..', pathName)
 
 describe('ouxe', () => {
-  let returnFile
+  let returnFile: () => void
 
   beforeEach(() => {
-    returnFile = () => {}
+    returnFile = () => undefined
   })
 
   afterEach(() => {
@@ -88,6 +123,74 @@ describe('ouxe', () => {
       await cli.readLine()
 
       // read until prettier is done running
+      await cli.readLine()
+
+      expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()
+    })
+  })
+
+  describe('running documents', () => {
+    it('creates a LICENSE.md file', async () => {
+      const writableFile = rootPath('LICENSE')
+      returnFile = reserveFile(writableFile)
+
+      const cli = clifford(OUXE, ['documents', '--skip-install'], {
+        readDelimiter: /\[32m\?/,
+      })
+
+      const promptDocument = await cli.readLine()
+      expect(clearColorMarkers(promptDocument)).toMatchInlineSnapshot(`
+        "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
+        gle all, <i> to invert selection)
+        ❯◯ Code of Conduct
+         ◯ License"
+      `)
+
+      await cli.type('a')
+
+      const promptLicense = await readUntil(cli, /which license/)
+      expect(clearColorMarkers(promptLicense)).toMatchInlineSnapshot(`
+        "? 📄  Please choose which license you want for your project: (Use arrow keys or 
+        type to search)
+        ❯ 0BSD 
+          AAL 
+          AFL-1.1 
+          AFL-1.2 
+          AFL-2.0 
+          AFL-2.1 
+          AFL-3.0 
+        (Move up and down to reveal more choices)"
+      `)
+
+      await cli.type('MIT')
+      const selectedProject = await readUntil(cli, /(0BSD|Searching)/, {
+        stopAppearing: true,
+      })
+
+      expect(clearColorMarkers(selectedProject)).toMatchInlineSnapshot(`
+        "? 📄  Please choose which license you want for your project: MIT
+        ❯ MIT "
+      `)
+
+      await cli.type('')
+
+      const promptUsername = await readUntil(cli, /name of the user/)
+      expect(clearColorMarkers(promptUsername)).toMatchInlineSnapshot(`
+        "? 👓  What's the name of the user that'll sign the license (Yurick <yurick.hausc
+        hild@gmail.com>) "
+      `)
+
+      // Press enter to confirm default
+      await cli.type('')
+
+      const promptEmail = await readUntil(cli, /provide an email/)
+      expect(clearColorMarkers(promptEmail)).toMatchInlineSnapshot(
+        `"? 📞 Please provide an email for contact "`,
+      )
+
+      await cli.type('clifford@yurick.me')
+      await cli.type('')
+
       await cli.readLine()
 
       expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()

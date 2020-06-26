@@ -51,9 +51,6 @@ export const handler = async (
     },
   ])
 
-  console.log({ argv })
-  console.log({ documents })
-
   if (argv.license || documents?.includes('license')) {
     const { selectedLicense, author } = await inquirer.prompt([
       {

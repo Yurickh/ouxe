@@ -85,4 +85,8 @@ export const handler = async (
 
     await covgen(contact, './CODE_OF_CONDUCT.md').catch(console.log)
   }
+
+  if (!argv.skipCongrats) {
+    console.log('🎉  Enjoy your configured workplace!')
+  }
 }

@@ -5,6 +5,8 @@ import reserveFile from './helpers/reserve-file'
 
 const OUXE = require.resolve('.')
 
+const leadingQuestionMark = /\[32m\?/
+
 // TODO: consider moving these to clifford
 const clearColorMarkers = (string: string): string =>
   // eslint-disable-next-line no-control-regex
@@ -36,7 +38,9 @@ describe('ouxe', () => {
     returnFile = reserveFile(rootPath('yarn.lock'))
 
     const cli = clifford(OUXE, ['prettier', '--skip-install'], {
-      readDelimiter: /\?/,
+      readDelimiter: leadingQuestionMark,
+      // Some CI environments take longer than a second to read 🤦‍♀️
+      readTimeout: false,
     })
 
     const promptPackager = await cli.readLine()
@@ -112,7 +116,7 @@ describe('ouxe', () => {
       }
 
       const cli = clifford(OUXE, ['documents', '--skip-install'], {
-        readDelimiter: /\[32m\?/,
+        readDelimiter: leadingQuestionMark,
       })
 
       const promptDocument = await cli.readLine()
@@ -179,7 +183,7 @@ describe('ouxe', () => {
       returnFile = reserveFile(writableFile)
 
       const cli = clifford(OUXE, ['documents', '--skip-install'], {
-        readDelimiter: /\[32m\?/,
+        readDelimiter: leadingQuestionMark,
       })
 
       const promptDocument = await cli.readLine()
@@ -212,7 +216,7 @@ describe('ouxe', () => {
       returnFile = reserveFile(license)
 
       const cli = clifford(OUXE, ['documents', '--skip-install'], {
-        readDelimiter: /\[32m\?/,
+        readDelimiter: leadingQuestionMark,
       })
 
       const promptDocument = await cli.readLine()

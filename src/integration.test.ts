@@ -49,9 +49,10 @@ describe('ouxe', () => {
     )
     // press enter for yarn
     await cli.type('')
-    await cli.readLine()
 
-    const promptWrite = await cli.readLine()
+    const promptWrite = await cli.readUntil(
+      /Do you want to immediately run prettier/,
+    )
     expect(promptWrite).toMatch(
       'Do you want to immediately run prettier on all files in the project?',
     )
@@ -78,6 +79,7 @@ describe('ouxe', () => {
 
       const cli = clifford(OUXE, ['prettier', '--skip-install'], {
         readDelimiter: /\(y\/n\)/i,
+        readTimeout: false,
       })
 
       const promptWrite = await cli.readLine()
@@ -113,6 +115,7 @@ describe('ouxe', () => {
 
       const cli = clifford(OUXE, ['documents', '--skip-install'], {
         readDelimiter: leadingQuestionMark,
+        readTimeout: false,
       })
 
       const promptDocument = await cli.readLine()

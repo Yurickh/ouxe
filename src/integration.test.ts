@@ -7,10 +7,10 @@ const OUXE = require.resolve('.')
 
 const leadingQuestionMark = /\[32m\?/
 
-// TODO: consider moving these to clifford
-const clearColorMarkers = (string: string): string =>
+// TODO: consider moving this to clifford
+const clearColorMarkers = (string: string | undefined): string =>
   // eslint-disable-next-line no-control-regex
-  string.replace(/\x1b\[\d{0,3}[\w]/g, '').replace(/^\s/g, '')
+  string?.replace(/\x1b\[\d{0,3}[\w]/g, '').replace(/^\s/g, '')
 
 const rootPath = (pathName: string): string =>
   path.join(__dirname, '..', pathName)
@@ -34,26 +34,27 @@ describe('ouxe', () => {
     expect(output).toMatchSnapshot()
   })
 
-  it('prompts for a packager if none is identified', async () => {
+  fit('prompts for a packager if none is identified', async () => {
     returnFile = reserveFile(rootPath('yarn.lock'))
 
     const cli = clifford(OUXE, ['prettier', '--skip-install'], {
       readDelimiter: leadingQuestionMark,
+      debug: true,
     })
 
-    const promptPackager = await cli.readUntil(/package manager/)
+    const promptPackager = await cli.readLine()
     expect(promptPackager).toMatch(
       'Which package manager do you intend to use?',
     )
     // press enter for yarn
-    await cli.type('')
+    // await cli.type('')
 
-    const promptWrite = await cli.readUntil(
-      /Do you want to immediately run prettier/,
-    )
-    expect(promptWrite).toMatch(
-      'Do you want to immediately run prettier on all files in the project?',
-    )
+    // const promptWrite = await cli.readUntil(
+    //   /Do you want to immediately run prettier/,
+    // )
+    // expect(promptWrite).toMatch(
+    //   'Do you want to immediately run prettier on all files in the project?',
+    // )
   })
 
   describe('running prettier', () => {
@@ -114,7 +115,7 @@ describe('ouxe', () => {
         readDelimiter: leadingQuestionMark,
       })
 
-      const promptDocument = await cli.readLine()
+      const promptDocument = await cli.readUntil(/Which documents/)
       expect(clearColorMarkers(promptDocument)).toMatchInlineSnapshot(`
         "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
         gle all, <i> to invert selection)
@@ -181,7 +182,7 @@ describe('ouxe', () => {
         readDelimiter: leadingQuestionMark,
       })
 
-      const promptDocument = await cli.readLine()
+      const promptDocument = await cli.readUntil(/which documents/i)
       expect(clearColorMarkers(promptDocument)).toMatchInlineSnapshot(`
         "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
         gle all, <i> to invert selection)
@@ -214,7 +215,7 @@ describe('ouxe', () => {
         readDelimiter: leadingQuestionMark,
       })
 
-      const promptDocument = await cli.readLine()
+      const promptDocument = await cli.readUntil(/which documents/i)
       expect(clearColorMarkers(promptDocument)).toMatchInlineSnapshot(`
         "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
         gle all, <i> to invert selection)

@@ -4,5 +4,6 @@ module.exports = {
     'jest-watch-typeahead/filename',
     'jest-watch-typeahead/testname',
   ],
+  testTimeout: 10000,
   watchPathIgnorePatterns: ['fixtures'],
 }

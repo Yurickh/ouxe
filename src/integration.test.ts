@@ -39,11 +39,9 @@ describe('ouxe', () => {
 
     const cli = clifford(OUXE, ['prettier', '--skip-install'], {
       readDelimiter: leadingQuestionMark,
-      // Some CI environments take longer than a second to read 🤦‍♀️
-      readTimeout: false,
     })
 
-    const promptPackager = await cli.readLine()
+    const promptPackager = await cli.readUntil(/package manager/)
     expect(promptPackager).toMatch(
       'Which package manager do you intend to use?',
     )
@@ -69,7 +67,7 @@ describe('ouxe', () => {
       export default function potato  () {
         let a,
         b,
-        c
+        c;
 
         [a, b, c].forEach(x =>
          0)
@@ -78,20 +76,19 @@ describe('ouxe', () => {
       )
 
       const cli = clifford(OUXE, ['prettier', '--skip-install'], {
-        readDelimiter: /\(y\/n\)/i,
-        readTimeout: false,
+        readDelimiter: leadingQuestionMark,
       })
 
-      const promptWrite = await cli.readLine()
+      const promptWrite = await cli.readUntil(
+        /Do you want to immediately run prettier/,
+      )
       expect(promptWrite).toMatch(
         'Do you want to immediately run prettier on all files in the project?',
       )
       await cli.type('y')
-      // We need to readline again after typing as inquirer will print out what we type
-      await cli.readLine()
 
-      const promptPrecommit = await cli.readLine()
-      expect(promptPrecommit).toMatch('precommit')
+      const promptPrecommit = await cli.readUntil(/precommit/)
+      expect(clearColorMarkers(promptPrecommit)).toMatchSnapshot()
 
       await cli.type('n')
 
@@ -115,7 +112,6 @@ describe('ouxe', () => {
 
       const cli = clifford(OUXE, ['documents', '--skip-install'], {
         readDelimiter: leadingQuestionMark,
-        readTimeout: false,
       })
 
       const promptDocument = await cli.readLine()

@@ -288,7 +288,9 @@ https://www.contributor-covenant.org/translations.
 "
 `;
 
-exports[`ouxe running prettier writes all files 1`] = `
+exports[`ouxe running prettier writes all files 1`] = `"? 💅  Do you want to run prettier as a precommit lint process? (Y/n) "`;
+
+exports[`ouxe running prettier writes all files 2`] = `
 "export default function potato() {
   let a, b, c
 

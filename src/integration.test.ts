@@ -10,36 +10,6 @@ const clearColorMarkers = (string: string): string =>
   // eslint-disable-next-line no-control-regex
   string.replace(/\x1b\[\d{0,3}[\w]/g, '').replace(/^\s/g, '')
 
-type Clifford = any
-
-type ReadUntilOptions = {
-  stopAppearing?: boolean
-  log?: boolean
-}
-
-const readUntil = async (
-  cli: Clifford,
-  regex: RegExp,
-  options: ReadUntilOptions = {},
-): Promise<string> => {
-  let waiting: string
-  let appears = false
-
-  do {
-    waiting = await cli.readLine()
-    appears = regex.test(waiting)
-
-    if (options.log) {
-      console.log({
-        waiting,
-        appears,
-      })
-    }
-  } while (options.stopAppearing ? appears : !appears)
-
-  return waiting
-}
-
 const rootPath = (pathName: string): string =>
   path.join(__dirname, '..', pathName)
 
@@ -155,7 +125,7 @@ describe('ouxe', () => {
 
       await cli.type('a')
 
-      const promptLicense = await readUntil(cli, /which license/)
+      const promptLicense = await cli.readUntil(/which license/)
       expect(clearColorMarkers(promptLicense)).toMatchInlineSnapshot(`
         "? 📄  Please choose which license you want for your project: (Use arrow keys or 
         type to search)
@@ -170,8 +140,8 @@ describe('ouxe', () => {
       `)
 
       await cli.type('MIT')
-      const selectedProject = await readUntil(cli, /(0BSD|Searching)/, {
-        stopAppearing: true,
+      const selectedProject = await cli.readUntil(/(0BSD|Searching)/, {
+        stopsAppearing: true,
       })
 
       expect(clearColorMarkers(selectedProject)).toMatchInlineSnapshot(`
@@ -181,7 +151,7 @@ describe('ouxe', () => {
 
       await cli.type('')
 
-      const promptUsername = await readUntil(cli, /name of the user/)
+      const promptUsername = await cli.readUntil(/name of the user/)
       expect(clearColorMarkers(promptUsername)).toMatchInlineSnapshot(`
         "? 👓  What's the name of the user that'll sign the license (Yurick <yurick.hausc
         hild@gmail.com>) "
@@ -190,7 +160,7 @@ describe('ouxe', () => {
       // Press enter to confirm default
       await cli.type('')
 
-      const promptEmail = await readUntil(cli, /provide an email/)
+      const promptEmail = await cli.readUntil(/provide an email/)
       expect(clearColorMarkers(promptEmail)).toMatchInlineSnapshot(
         `"? 📞 Please provide an email for contact "`,
       )
@@ -198,7 +168,7 @@ describe('ouxe', () => {
       await cli.type('clifford@yurick.me')
       await cli.type('')
 
-      await readUntil(cli, /Created file/)
+      await cli.readUntil(/Created file/)
 
       expect(fs.readFileSync(license).toString()).toMatchSnapshot()
       expect(fs.readFileSync(coc).toString()).toMatchSnapshot()
@@ -223,7 +193,7 @@ describe('ouxe', () => {
       // Press space to select Code of Conduct
       cli.type(' ')
 
-      const promptEmail = await readUntil(cli, /provide an email/)
+      const promptEmail = await cli.readUntil(/provide an email/)
       expect(clearColorMarkers(promptEmail)).toMatchInlineSnapshot(
         `"? 📞 Please provide an email for contact "`,
       )
@@ -231,7 +201,7 @@ describe('ouxe', () => {
       await cli.type('clifford@yurick.me')
       await cli.type('')
 
-      await readUntil(cli, /Enjoy your configured workplace/)
+      await cli.readUntil(/Enjoy your configured workplace/)
 
       expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()
     })
@@ -256,7 +226,7 @@ describe('ouxe', () => {
       // spacebar invert will select LICENSE (I'm yet to learn how to press down)
       await cli.type(' i')
 
-      const promptLicense = await readUntil(cli, /which license/)
+      const promptLicense = await cli.readUntil(/which license/)
       expect(clearColorMarkers(promptLicense)).toMatchInlineSnapshot(`
         "? 📄  Please choose which license you want for your project: (Use arrow keys or 
         type to search)
@@ -271,8 +241,8 @@ describe('ouxe', () => {
       `)
 
       await cli.type('MIT')
-      const selectedProject = await readUntil(cli, /(0BSD|Searching)/, {
-        stopAppearing: true,
+      const selectedProject = await cli.readUntil(/(0BSD|Searching)/, {
+        stopsAppearing: true,
       })
 
       expect(clearColorMarkers(selectedProject)).toMatchInlineSnapshot(`
@@ -282,7 +252,7 @@ describe('ouxe', () => {
 
       await cli.type('')
 
-      const promptUsername = await readUntil(cli, /name of the user/)
+      const promptUsername = await cli.readUntil(/name of the user/)
       expect(clearColorMarkers(promptUsername)).toMatchInlineSnapshot(`
         "? 👓  What's the name of the user that'll sign the license (Yurick <yurick.hausc
         hild@gmail.com>) "
@@ -291,7 +261,7 @@ describe('ouxe', () => {
       // Press enter to confirm default
       await cli.type('')
 
-      await readUntil(cli, /Enjoy your configured workplace/)
+      await cli.readUntil(/Enjoy your configured workplace/)
 
       expect(fs.readFileSync(license).toString()).toMatchSnapshot()
     })

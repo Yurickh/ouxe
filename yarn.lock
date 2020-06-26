@@ -2469,10 +2469,10 @@ cli-width@^2.0.0:
   resolved "https://registry.yarnpkg.com/cli-width/-/cli-width-2.2.1.tgz#b0433d0b4e9c847ef18868a4ef16fd5fc8271c48"
   integrity sha512-GRMWDxpOB6Dgk2E5Uo+3eEBvtOOlimMmpbFiKuLFnQzYDavtLFY3K5ona41jgN/WdRZtG7utuVSVTL4HbZHGkw==
 
-clifford@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/clifford/-/clifford-1.0.1.tgz#9c5819c110f36a321fa5942bf7a054cc53f1dfbc"
-  integrity sha512-tS84Zpn0t9fv5xBsSRiJp4NinIAXZ6rE/ZGvk6oJaGEf6kA2DAmL5lgf+B2FP78jTisesrVd8LnoJ/cfQLu0bA==
+clifford@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/clifford/-/clifford-1.0.2.tgz#90cfae8e02407bb6069cfc1c2e2906673c5c9bf5"
+  integrity sha512-ME+/GPUSzv8c0ng7JIKVghU787Gvp3BVpQr43Rq9dnfttULOce5JOzwlU4npzxarsuerekEcPnu8o/PrAReoTQ==
   dependencies:
     "@rauschma/stringio" "^1.4.0"
     cross-spawn-with-kill "^1.0.0"

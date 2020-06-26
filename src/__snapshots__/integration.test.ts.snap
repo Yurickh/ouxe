@@ -13,9 +13,11 @@ exports[`ouxe runs help 1`] = `
 "Usage: ouxe [configuration] [args]
 
 Commands:
-  ouxe           Choose from some configuration options                [default]
-  ouxe prettier  Opinionated prettier configuration                 [aliases: p]
-  ouxe eslint    Opinionated eslint configuration                   [aliases: e]
+  ouxe            Choose from some configuration options               [default]
+  ouxe prettier   Opinionated prettier configuration                [aliases: p]
+  ouxe eslint     Opinionated eslint configuration                  [aliases: e]
+  ouxe documents  Basic legal documents, like Code of Conduct and License
+                                                                    [aliases: d]
 
 Options:
   --version       Show version number                                  [boolean]

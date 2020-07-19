@@ -15,6 +15,11 @@ const clearColorMarkers = (string: string | undefined): string =>
 const rootPath = (pathName: string): string =>
   path.join(__dirname, '..', pathName)
 
+const runOuxe = (
+  args: Parameters<typeof clifford>[1],
+  optOverrides: Partial<Parameters<typeof clifford>[2]> = {},
+) => clifford(OUXE, args, { useBabelNode: true, ...optOverrides })
+
 describe('ouxe', () => {
   let returnFile: () => void
 
@@ -27,19 +32,19 @@ describe('ouxe', () => {
   })
 
   it('runs help', async () => {
-    const cli = clifford(OUXE, ['--help'])
+    const cli = runOuxe(['--help'])
 
     const output = await cli.read()
 
     expect(output).toMatchSnapshot()
   })
 
-  fit('prompts for a packager if none is identified', async () => {
+  it('prompts for a packager if none is identified', async () => {
     returnFile = reserveFile(rootPath('yarn.lock'))
 
-    const cli = clifford(OUXE, ['prettier', '--skip-install'], {
+    const cli = runOuxe(['prettier', '--skip-install'], {
       readDelimiter: leadingQuestionMark,
-      debug: true,
+      readTimeout: 0,
     })
 
     const promptPackager = await cli.readLine()
@@ -47,14 +52,14 @@ describe('ouxe', () => {
       'Which package manager do you intend to use?',
     )
     // press enter for yarn
-    // await cli.type('')
+    await cli.type('')
 
-    // const promptWrite = await cli.readUntil(
-    //   /Do you want to immediately run prettier/,
-    // )
-    // expect(promptWrite).toMatch(
-    //   'Do you want to immediately run prettier on all files in the project?',
-    // )
+    const promptWrite = await cli.readUntil(
+      /Do you want to immediately run prettier/,
+    )
+    expect(promptWrite).toMatch(
+      'Do you want to immediately run prettier on all files in the project?',
+    )
   })
 
   describe('running prettier', () => {
@@ -76,7 +81,7 @@ describe('ouxe', () => {
       `,
       )
 
-      const cli = clifford(OUXE, ['prettier', '--skip-install'], {
+      const cli = runOuxe(['prettier', '--skip-install'], {
         readDelimiter: leadingQuestionMark,
       })
 
@@ -111,7 +116,7 @@ describe('ouxe', () => {
         returnCOC()
       }
 
-      const cli = clifford(OUXE, ['documents', '--skip-install'], {
+      const cli = runOuxe(['documents', '--skip-install'], {
         readDelimiter: leadingQuestionMark,
       })
 
@@ -178,7 +183,7 @@ describe('ouxe', () => {
       const writableFile = rootPath('CODE_OF_CONDUCT.md')
       returnFile = reserveFile(writableFile)
 
-      const cli = clifford(OUXE, ['documents', '--skip-install'], {
+      const cli = runOuxe(['documents', '--skip-install'], {
         readDelimiter: leadingQuestionMark,
       })
 
@@ -211,7 +216,7 @@ describe('ouxe', () => {
 
       returnFile = reserveFile(license)
 
-      const cli = clifford(OUXE, ['documents', '--skip-install'], {
+      const cli = runOuxe(['documents', '--skip-install'], {
         readDelimiter: leadingQuestionMark,
       })
 

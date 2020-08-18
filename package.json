@@ -19,6 +19,7 @@
   "repository": "https://github.com/Yurickh/ouxe",
   "scripts": {
     "test": "jest",
+    "test:ci": "jest --forceExit",
     "lint": "eslint .",
     "build": "microbundle --target node",
     "start": "microbundle watch",

@@ -60,6 +60,8 @@ describe('ouxe', () => {
     expect(promptWrite).toMatch(
       'Do you want to immediately run prettier on all files in the project?',
     )
+
+    cli.kill()
   })
 
   describe('running prettier', () => {
@@ -101,6 +103,8 @@ describe('ouxe', () => {
       await cli.readUntil(/Enjoy your configured workplace/)
 
       expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()
+
+      cli.kill()
     })
   })
 
@@ -177,6 +181,8 @@ describe('ouxe', () => {
 
       expect(fs.readFileSync(license).toString()).toMatchSnapshot()
       expect(fs.readFileSync(coc).toString()).toMatchSnapshot()
+
+      cli.kill()
     })
 
     it('creates a CODE_OF_CONDUCT.md', async () => {
@@ -209,6 +215,8 @@ describe('ouxe', () => {
       await cli.readUntil(/Enjoy your configured workplace/)
 
       expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()
+
+      cli.kill()
     })
 
     it('creates a LICENSE file', async () => {
@@ -269,6 +277,8 @@ describe('ouxe', () => {
       await cli.readUntil(/Enjoy your configured workplace/)
 
       expect(fs.readFileSync(license).toString()).toMatchSnapshot()
+
+      cli.kill()
     })
   })
 })

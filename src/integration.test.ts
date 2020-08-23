@@ -1,9 +1,7 @@
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import clifford from 'clifford'
+import clifford from '../clifford'
 import reserveFile from './helpers/reserve-file'
-
-const OUXE = require.resolve('.')
 
 const leadingQuestionMark = /\[32m\?/
 
@@ -15,10 +13,8 @@ const clearColorMarkers = (string: string | undefined): string =>
 const rootPath = (pathName: string): string =>
   path.join(__dirname, '..', pathName)
 
-const runOuxe = (
-  args: Parameters<typeof clifford>[1],
-  optOverrides: Partial<Parameters<typeof clifford>[2]> = {},
-) => clifford(OUXE, args, { useBabelNode: true, ...optOverrides })
+const runOuxe = (args: string[], options: object = {}) =>
+  clifford('./src/index.ts', args, options)
 
 describe('ouxe', () => {
   let returnFile: () => void
@@ -34,18 +30,13 @@ describe('ouxe', () => {
   it('runs help', async () => {
     const cli = runOuxe(['--help'])
 
-    const output = await cli.read()
-
-    expect(output).toMatchSnapshot()
+    expect(await cli.read()).toMatchSnapshot()
   })
 
   it('prompts for a packager if none is identified', async () => {
     returnFile = reserveFile(rootPath('yarn.lock'))
 
-    const cli = runOuxe(['prettier', '--skip-install'], {
-      readDelimiter: leadingQuestionMark,
-      readTimeout: 0,
-    })
+    const cli = runOuxe(['prettier', '--skip-install'])
 
     const promptPackager = await cli.readLine()
     expect(promptPackager).toMatch(
@@ -60,12 +51,10 @@ describe('ouxe', () => {
     expect(promptWrite).toMatch(
       'Do you want to immediately run prettier on all files in the project?',
     )
-
-    cli.kill()
   })
 
   describe('running prettier', () => {
-    it('writes all files', async () => {
+    fit('writes all files', async () => {
       const writableFile = path.join(__dirname, 'fixtures/write-prettier.js')
       returnFile = () => fs.removeSync(writableFile)
 
@@ -83,28 +72,24 @@ describe('ouxe', () => {
       `,
       )
 
-      const cli = runOuxe(['prettier', '--skip-install'], {
-        readDelimiter: leadingQuestionMark,
-      })
+      const cli = runOuxe(['prettier', '--skip-install'], { debug: true })
 
       const promptWrite = await cli.readUntil(
-        /Do you want to immediately run prettier/,
+        'Do you want to immediately run prettier',
       )
       expect(promptWrite).toMatch(
         'Do you want to immediately run prettier on all files in the project?',
       )
       await cli.type('y')
 
-      const promptPrecommit = await cli.readUntil(/precommit/)
+      const promptPrecommit = await cli.readUntil('precommit')
       expect(clearColorMarkers(promptPrecommit)).toMatchSnapshot()
 
       await cli.type('n')
 
-      await cli.readUntil(/Enjoy your configured workplace/)
+      await cli.readUntil('Enjoy your configured workplace')
 
       expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()
-
-      cli.kill()
     })
   })
 
@@ -181,8 +166,6 @@ describe('ouxe', () => {
 
       expect(fs.readFileSync(license).toString()).toMatchSnapshot()
       expect(fs.readFileSync(coc).toString()).toMatchSnapshot()
-
-      cli.kill()
     })
 
     it('creates a CODE_OF_CONDUCT.md', async () => {
@@ -202,7 +185,7 @@ describe('ouxe', () => {
       `)
 
       // Press space to select Code of Conduct
-      cli.type(' ')
+      await cli.type(' ')
 
       const promptEmail = await cli.readUntil(/provide an email/)
       expect(clearColorMarkers(promptEmail)).toMatchInlineSnapshot(
@@ -215,8 +198,6 @@ describe('ouxe', () => {
       await cli.readUntil(/Enjoy your configured workplace/)
 
       expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()
-
-      cli.kill()
     })
 
     it('creates a LICENSE file', async () => {
@@ -277,8 +258,6 @@ describe('ouxe', () => {
       await cli.readUntil(/Enjoy your configured workplace/)
 
       expect(fs.readFileSync(license).toString()).toMatchSnapshot()
-
-      cli.kill()
     })
   })
 })

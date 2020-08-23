@@ -312,6 +312,5 @@ Commands:
 Options:
   --version       Show version number                                  [boolean]
   --skip-install  Skip installation steps. Ideal for the unconnected.  [boolean]
-  --help          Show help                                            [boolean]
-"
+  --help          Show help                                            [boolean]"
 `;

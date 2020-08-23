@@ -1,10 +1,8 @@
+import { Readable } from 'stream'
 import execa from 'execa'
-import { streamWrite, readableToString } from '@rauschma/stringio'
-import readLineGenerator from './read-line-generator'
-import attachDebugListeners from './attach-debug-listeners'
+import attachDebugListeners, { sanitize } from './attach-debug-listeners'
 
 interface CliffordOptions {
-  readDelimiter: string | RegExp
   readTimeout: number | false
   debug: boolean
   useBabelNode: boolean
@@ -14,19 +12,6 @@ interface ReadUntilOptions {
   stopsAppearing?: boolean
 }
 
-interface CliffordInstance {
-  type(string: string | Buffer | Uint8Array): Promise<void>
-  read(): Promise<string>
-  readLine(): Promise<string>
-  readUntil(
-    regex: RegExp,
-    options?: ReadUntilOptions,
-  ): Promise<string | undefined>
-  kill(): void
-  toString(): string
-  toJSON(): string
-}
-
 const defaultConfig = (command: string) => ({
   debug: false,
   readDelimiter: '\n',
@@ -34,37 +19,115 @@ const defaultConfig = (command: string) => ({
   useBabelNode: !command.endsWith('.js'),
 })
 
-const runWithTimeout = <T>(
-  promise: Promise<T>,
-  timeout: number,
-): Promise<T | undefined> =>
-  Promise.race<Promise<T | undefined>>([
-    promise,
-    new Promise((_resolve, reject) =>
-      setTimeout(
-        () => reject(new Error(`Promised timed out: ${promise}`)),
-        timeout,
-      ),
-    ),
-  ])
+const execaOptions = () => ({
+  all: true,
+  preferLocal: true,
+})
+
+function isRegExp(value: unknown): value is RegExp {
+  return Object.prototype.toString.call(value) === '[object RegExp]'
+}
+
+function test(matcher: string | RegExp, subject: string) {
+  if (isRegExp(matcher)) {
+    return matcher.test(subject)
+  } else {
+    return subject.includes(matcher)
+  }
+}
+
+function indexOf(matcher: string | RegExp, subject: string) {
+  if (isRegExp(matcher)) {
+    return matcher.exec(subject).index
+  } else {
+    return subject.indexOf(matcher)
+  }
+}
 
 const spawnNode = (command: string, args: string[]) =>
-  execa('node', ['--', command, ...args], {
-    stdio: 'pipe',
-    cwd: process.cwd(),
-  })
+  execa('node', ['--', command, ...args], execaOptions())
 
 const spawnBabelNode = (command: string, args: string[]) =>
-  execa('babel-node', ['--extensions', '.ts,.js', '--', command, ...args], {
-    stdio: 'pipe',
-    cwd: process.cwd(),
-  })
+  execa(
+    'babel-node',
+    ['--extensions', '.ts,.js', '--', command, ...args],
+    execaOptions(),
+  )
+
+class Reader {
+  data = ''
+
+  constructor(private stream: Readable) {
+    this.startListening()
+  }
+
+  private readSegment() {
+    const data = this.data
+
+    this.data = ''
+
+    return data
+  }
+
+  private async startListening() {
+    for await (const chunk of this.stream) {
+      this.data += chunk
+    }
+  }
+
+  private waitForNextChunk() {
+    return new Promise((resolve, reject) => {
+      let resolved = false
+      this.stream.once('data', () => {
+        if (!resolved) {
+          resolved = true
+          resolve()
+        }
+      })
+
+      this.stream.once('close', () => {
+        if (!resolved) {
+          resolved = true
+          reject(
+            new Error('[Clifford]: Reached end of input when trying to read.'),
+          )
+        }
+      })
+    })
+  }
+
+  async while(matcher: string | RegExp) {
+    const currentSegment = this.readSegment()
+
+    if (test(matcher, currentSegment)) {
+      await this.waitForNextChunk()
+      return this.while(matcher)
+    }
+
+    return currentSegment
+  }
+
+  async until(matcher: string | RegExp) {
+    const currentSegment = this.readSegment()
+    console.log('Matching \n', matcher, '\n against \n', currentSegment, '--')
+
+    if (test(matcher, currentSegment)) {
+      console.log('matched')
+      return currentSegment
+    }
+
+    console.log('not matched, wait for next chunk')
+
+    await this.waitForNextChunk()
+    return this.until(matcher)
+  }
+}
 
 export default function clifford(
   command: string,
   args: string[] = [],
   options: Partial<CliffordOptions> = {},
-): CliffordInstance {
+) {
   const optionsWithDefault: CliffordOptions = {
     ...defaultConfig(command),
     ...options,
@@ -74,50 +137,39 @@ export default function clifford(
   const cli = spawner(command, args)
 
   if (options.debug) {
-    attachDebugListeners(cli)
+    attachDebugListeners(command, cli)
   }
 
-  const { stdin, stdout } = cli
-
-  if (stdout === null || stdin === null) {
-    // This is null only when `stdio` is configured otherwise
-    throw new Error('[Clifford]: stdio of execa has been misconfigured')
-  }
-
-  const outputIterator = readLineGenerator(
-    stdout,
-    optionsWithDefault.readDelimiter,
-  )[Symbol.asyncIterator]()
-
-  const stringification = `[Clifford instance: running process at \`${command}\` with args \`${JSON.stringify(
+  const stringification = `[Clifford instance: running process for \`${command}\` with args \`${JSON.stringify(
     args,
   )}\` ]`
 
+  const reader = new Reader(cli.all)
+
+  const readUntil = async (
+    matcher: string | RegExp,
+    options: ReadUntilOptions = {},
+  ) => {
+    if (options.stopsAppearing) {
+      return reader.while(matcher)
+    } else {
+      return reader.until(matcher)
+    }
+  }
+
   return {
-    type: async (string: string | Buffer | Uint8Array) =>
-      streamWrite(stdin, `${string}\n`),
-    read: () => cli.then(({ stdout }) => stdout),
-    readLine: () => {
-      const line = outputIterator.next().then(({ value }) => value)
-
-      if (optionsWithDefault.readTimeout) {
-        return runWithTimeout(line, optionsWithDefault.readTimeout)
-      } else {
-        return line
+    // Although we don't need await here, it seems `write` might be async on windows
+    type: async (string: string) => {
+      if (optionsWithDefault.debug) {
+        console.log(`[stdin]: ${sanitize(string + '\n')}`)
       }
-    },
-    readUntil: async (matcher, options = {}) => {
-      let line: string
-      let appears = false
 
-      do {
-        line = (await outputIterator.next()).value
-        appears = matcher.test(line)
-      } while (options.stopsAppearing ? appears : !appears)
-
-      return line
+      return cli.stdin.write(`${string}\n`)
     },
-    kill: () => cli.kill(),
+    read: () => cli.then(({ all }) => all),
+    readLine: () => readUntil('\n'),
+    readUntil,
+    kill: () => cli.cancel(),
     toString: () => stringification,
     toJSON: () => stringification,
   }

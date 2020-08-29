@@ -3,8 +3,6 @@ import * as path from 'path'
 import clifford from '../clifford'
 import reserveFile from './helpers/reserve-file'
 
-const leadingQuestionMark = /\[32m\?/
-
 // TODO: consider moving this to clifford
 const clearColorMarkers = (string: string | undefined): string =>
   // eslint-disable-next-line no-control-regex
@@ -46,7 +44,7 @@ describe('ouxe', () => {
     await cli.type('')
 
     const promptWrite = await cli.readUntil(
-      /Do you want to immediately run prettier/,
+      /Do you want to immediately run prettier.*/,
     )
     expect(promptWrite).toMatch(
       'Do you want to immediately run prettier on all files in the project?',
@@ -54,7 +52,7 @@ describe('ouxe', () => {
   })
 
   describe('running prettier', () => {
-    fit('writes all files', async () => {
+    it('writes all files', async () => {
       const writableFile = path.join(__dirname, 'fixtures/write-prettier.js')
       returnFile = () => fs.removeSync(writableFile)
 
@@ -72,7 +70,7 @@ describe('ouxe', () => {
       `,
       )
 
-      const cli = runOuxe(['prettier', '--skip-install'], { debug: true })
+      const cli = runOuxe(['prettier', '--skip-install'])
 
       const promptWrite = await cli.readUntil(
         'Do you want to immediately run prettier',
@@ -105,11 +103,11 @@ describe('ouxe', () => {
         returnCOC()
       }
 
-      const cli = runOuxe(['documents', '--skip-install'], {
-        readDelimiter: leadingQuestionMark,
-      })
+      const cli = runOuxe(['documents', '--skip-install'])
 
-      const promptDocument = await cli.readUntil(/Which documents/)
+      const promptDocument = await cli.readUntil(
+        /Which documents do you want to create(.|\n)*/m,
+      )
       expect(clearColorMarkers(promptDocument)).toMatchInlineSnapshot(`
         "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
         gle all, <i> to invert selection)
@@ -119,7 +117,7 @@ describe('ouxe', () => {
 
       await cli.type('a')
 
-      const promptLicense = await cli.readUntil(/which license/)
+      const promptLicense = await cli.readUntil(/which license(.|\n)*/)
       expect(clearColorMarkers(promptLicense)).toMatchInlineSnapshot(`
         "? 📄  Please choose which license you want for your project: (Use arrow keys or 
         type to search)
@@ -134,9 +132,7 @@ describe('ouxe', () => {
       `)
 
       await cli.type('MIT')
-      const selectedProject = await cli.readUntil(/(0BSD|Searching)/, {
-        stopsAppearing: true,
-      })
+      const selectedProject = await cli.readUntil('❯ MIT')
 
       expect(clearColorMarkers(selectedProject)).toMatchInlineSnapshot(`
         "? 📄  Please choose which license you want for your project: MIT
@@ -145,7 +141,7 @@ describe('ouxe', () => {
 
       await cli.type('')
 
-      const promptUsername = await cli.readUntil(/name of the user/)
+      const promptUsername = await cli.readUntil(/name of the user(\n|.)*/)
       expect(clearColorMarkers(promptUsername)).toMatchInlineSnapshot(`
         "? 👓  What's the name of the user that'll sign the license (Yurick <yurick.hausc
         hild@gmail.com>) "
@@ -154,7 +150,7 @@ describe('ouxe', () => {
       // Press enter to confirm default
       await cli.type('')
 
-      const promptEmail = await cli.readUntil(/provide an email/)
+      const promptEmail = await cli.readUntil(/provide an email.*/)
       expect(clearColorMarkers(promptEmail)).toMatchInlineSnapshot(
         `"? 📞 Please provide an email for contact "`,
       )
@@ -168,15 +164,13 @@ describe('ouxe', () => {
       expect(fs.readFileSync(coc).toString()).toMatchSnapshot()
     })
 
-    it('creates a CODE_OF_CONDUCT.md', async () => {
-      const writableFile = rootPath('CODE_OF_CONDUCT.md')
-      returnFile = reserveFile(writableFile)
+    fit('creates a CODE_OF_CONDUCT.md', async () => {
+      const codeOfConduct = rootPath('CODE_OF_CONDUCT.md')
+      returnFile = reserveFile(codeOfConduct)
 
-      const cli = runOuxe(['documents', '--skip-install'], {
-        readDelimiter: leadingQuestionMark,
-      })
+      const cli = runOuxe(['documents', '--skip-install'])
 
-      const promptDocument = await cli.readUntil(/which documents/i)
+      const promptDocument = await cli.readUntil(/which documents(.|\n)*/i)
       expect(clearColorMarkers(promptDocument)).toMatchInlineSnapshot(`
         "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
         gle all, <i> to invert selection)
@@ -187,17 +181,15 @@ describe('ouxe', () => {
       // Press space to select Code of Conduct
       await cli.type(' ')
 
-      const promptEmail = await cli.readUntil(/provide an email/)
+      const promptEmail = await cli.readUntil(/provide an email.*/)
       expect(clearColorMarkers(promptEmail)).toMatchInlineSnapshot(
         `"? 📞 Please provide an email for contact "`,
       )
 
       await cli.type('clifford@yurick.me')
-      await cli.type('')
-
       await cli.readUntil(/Enjoy your configured workplace/)
 
-      expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()
+      expect(fs.readFileSync(codeOfConduct).toString()).toMatchSnapshot()
     })
 
     it('creates a LICENSE file', async () => {
@@ -205,9 +197,7 @@ describe('ouxe', () => {
 
       returnFile = reserveFile(license)
 
-      const cli = runOuxe(['documents', '--skip-install'], {
-        readDelimiter: leadingQuestionMark,
-      })
+      const cli = runOuxe(['documents', '--skip-install'])
 
       const promptDocument = await cli.readUntil(/which documents/i)
       expect(clearColorMarkers(promptDocument)).toMatchInlineSnapshot(`
@@ -235,9 +225,7 @@ describe('ouxe', () => {
       `)
 
       await cli.type('MIT')
-      const selectedProject = await cli.readUntil(/(0BSD|Searching)/, {
-        stopsAppearing: true,
-      })
+      const selectedProject = await cli.readUntil(/(0BSD|Searching)/)
 
       expect(clearColorMarkers(selectedProject)).toMatchInlineSnapshot(`
         "? 📄  Please choose which license you want for your project: MIT

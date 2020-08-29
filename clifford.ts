@@ -8,13 +8,8 @@ interface CliffordOptions {
   useBabelNode: boolean
 }
 
-interface ReadUntilOptions {
-  stopsAppearing?: boolean
-}
-
 const defaultConfig = (command: string) => ({
   debug: false,
-  readDelimiter: '\n',
   readTimeout: 1000,
   useBabelNode: !command.endsWith('.js'),
 })
@@ -28,19 +23,32 @@ function isRegExp(value: unknown): value is RegExp {
   return Object.prototype.toString.call(value) === '[object RegExp]'
 }
 
-function test(matcher: string | RegExp, subject: string) {
-  if (isRegExp(matcher)) {
-    return matcher.test(subject)
-  } else {
-    return subject.includes(matcher)
+function test(matcher: string | RegExp): (subject: string) => boolean
+function test(matcher: string | RegExp, subject: string): boolean
+function test(matcher: string | RegExp, subject?: string) {
+  const applyMatcher = (subject: string) => {
+    if (isRegExp(matcher)) {
+      return matcher.test(subject)
+    } else {
+      return subject.includes(matcher)
+    }
   }
+
+  if (subject === undefined) {
+    return applyMatcher
+  }
+
+  return applyMatcher(subject)
 }
 
-function indexOf(matcher: string | RegExp, subject: string) {
+function match(matcher: string | RegExp, subject: string) {
   if (isRegExp(matcher)) {
-    return matcher.exec(subject).index
+    return matcher.exec(subject)
   } else {
-    return subject.indexOf(matcher)
+    const matches = [subject] as RegExpExecArray
+    matches.index = subject.indexOf(matcher)
+    matches.input = subject
+    return matches
   }
 }
 
@@ -55,33 +63,25 @@ const spawnBabelNode = (command: string, args: string[]) =>
   )
 
 class Reader {
-  data = ''
+  chunks: string[] = []
 
   constructor(private stream: Readable) {
     this.startListening()
   }
 
-  private readSegment() {
-    const data = this.data
-
-    this.data = ''
-
-    return data
-  }
-
   private async startListening() {
     for await (const chunk of this.stream) {
-      this.data += chunk
+      this.chunks.push(chunk.toString())
     }
   }
 
   private waitForNextChunk() {
-    return new Promise((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       let resolved = false
-      this.stream.once('data', () => {
+      this.stream.once('data', (chunk) => {
         if (!resolved) {
           resolved = true
-          resolve()
+          resolve(chunk.toString())
         }
       })
 
@@ -96,30 +96,68 @@ class Reader {
     })
   }
 
-  async while(matcher: string | RegExp) {
-    const currentSegment = this.readSegment()
-
-    if (test(matcher, currentSegment)) {
-      await this.waitForNextChunk()
-      return this.while(matcher)
+  private matches(matcher: string | RegExp, subject: string) {
+    if (!test(matcher, subject)) {
+      return null
     }
 
-    return currentSegment
+    const result = match(matcher, subject)
+
+    return {
+      stringUntilMatch: subject.slice(0, result.index + result[0].length),
+      stringFromMatch: subject.slice(result.index + result[0].length),
+    }
   }
 
   async until(matcher: string | RegExp) {
-    const currentSegment = this.readSegment()
-    console.log('Matching \n', matcher, '\n against \n', currentSegment, '--')
-
-    if (test(matcher, currentSegment)) {
-      console.log('matched')
-      return currentSegment
+    // Check if the concatenated string contains the match
+    // We need this check for the case where the match is split in mutiple chunks
+    const appearanceWithJoin = this.matches(matcher, this.chunks.join(''))
+    if (appearanceWithJoin !== null) {
+      // console.log(matcher, 'appearanceWithJoin')
+      this.chunks = [appearanceWithJoin.stringFromMatch]
+      return appearanceWithJoin.stringUntilMatch
     }
 
-    console.log('not matched, wait for next chunk')
+    // Check if any of the individual chunks contains the match
+    // We need this check because a chunk can override previous chunks by using special chars
+    const appearanceWithinChunks = this.chunks.map((chunk) =>
+      this.matches(matcher, chunk),
+    )
+    if (appearanceWithinChunks.some(Boolean)) {
+      const index = appearanceWithinChunks.findIndex(Boolean)
+      const stringUntilMatch =
+        this.chunks.slice(0, index).join('')
+        + appearanceWithinChunks[index].stringUntilMatch
 
-    await this.waitForNextChunk()
-    return this.until(matcher)
+      this.chunks = [stringUntilMatch, ...this.chunks.slice(index + 1)]
+
+      // console.log(matcher, 'appearanceWithinChunks')
+      return stringUntilMatch
+    }
+
+    // From this point forward we know `this.chunks` doesn't contain the match,
+    // so we can check for incoming chunks
+
+    let incomingChunk: string
+    while ((incomingChunk = await this.waitForNextChunk())) {
+      const appearanceInChunk = this.matches(matcher, incomingChunk)
+
+      if (appearanceInChunk !== null) {
+        this.chunks = [appearanceInChunk.stringFromMatch]
+        // console.log(matcher, 'appearanceInChunk')
+        return appearanceInChunk.stringUntilMatch
+      }
+
+      // this.chunks should now contain the new chunk
+      const appearanceWithNewJoin = this.matches(matcher, this.chunks.join(''))
+
+      if (appearanceWithNewJoin !== null) {
+        this.chunks = [appearanceWithNewJoin.stringFromMatch]
+        // console.log(matcher, 'appearanceWithNewJoin')
+        return appearanceWithNewJoin.stringUntilMatch
+      }
+    }
   }
 }
 
@@ -146,29 +184,18 @@ export default function clifford(
 
   const reader = new Reader(cli.all)
 
-  const readUntil = async (
-    matcher: string | RegExp,
-    options: ReadUntilOptions = {},
-  ) => {
-    if (options.stopsAppearing) {
-      return reader.while(matcher)
-    } else {
-      return reader.until(matcher)
-    }
-  }
-
   return {
     // Although we don't need await here, it seems `write` might be async on windows
     type: async (string: string) => {
       if (optionsWithDefault.debug) {
-        console.log(`[stdin]: ${sanitize(string + '\n')}`)
+        // console.log(`[stdin]: ${sanitize(string + '\n')}`)
       }
 
       return cli.stdin.write(`${string}\n`)
     },
     read: () => cli.then(({ all }) => all),
-    readLine: () => readUntil('\n'),
-    readUntil,
+    readLine: () => reader.until('\n'),
+    readUntil: (matcher: string | RegExp) => reader.until(matcher),
     kill: () => cli.cancel(),
     toString: () => stringification,
     toJSON: () => stringification,

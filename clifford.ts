@@ -110,17 +110,6 @@ class Reader {
   }
 
   async until(matcher: string | RegExp) {
-    // Check if the concatenated string contains the match
-    // We need this check for the case where the match is split in mutiple chunks
-    const appearanceWithJoin = this.matches(matcher, this.chunks.join(''))
-    if (appearanceWithJoin !== null) {
-      // console.log(matcher, 'appearanceWithJoin')
-      this.chunks = [appearanceWithJoin.stringFromMatch]
-      return appearanceWithJoin.stringUntilMatch
-    }
-
-    // Check if any of the individual chunks contains the match
-    // We need this check because a chunk can override previous chunks by using special chars
     const appearanceWithinChunks = this.chunks.map((chunk) =>
       this.matches(matcher, chunk),
     )
@@ -145,17 +134,7 @@ class Reader {
 
       if (appearanceInChunk !== null) {
         this.chunks = [appearanceInChunk.stringFromMatch]
-        // console.log(matcher, 'appearanceInChunk')
         return appearanceInChunk.stringUntilMatch
-      }
-
-      // this.chunks should now contain the new chunk
-      const appearanceWithNewJoin = this.matches(matcher, this.chunks.join(''))
-
-      if (appearanceWithNewJoin !== null) {
-        this.chunks = [appearanceWithNewJoin.stringFromMatch]
-        // console.log(matcher, 'appearanceWithNewJoin')
-        return appearanceWithNewJoin.stringUntilMatch
       }
     }
   }

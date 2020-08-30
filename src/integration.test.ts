@@ -164,7 +164,7 @@ describe('ouxe', () => {
       expect(fs.readFileSync(coc).toString()).toMatchSnapshot()
     })
 
-    fit('creates a CODE_OF_CONDUCT.md', async () => {
+    it('creates a CODE_OF_CONDUCT.md', async () => {
       const codeOfConduct = rootPath('CODE_OF_CONDUCT.md')
       returnFile = reserveFile(codeOfConduct)
 
@@ -199,7 +199,7 @@ describe('ouxe', () => {
 
       const cli = runOuxe(['documents', '--skip-install'])
 
-      const promptDocument = await cli.readUntil(/which documents/i)
+      const promptDocument = await cli.readUntil(/which documents(\n|.)*/i)
       expect(clearColorMarkers(promptDocument)).toMatchInlineSnapshot(`
         "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
         gle all, <i> to invert selection)
@@ -210,7 +210,7 @@ describe('ouxe', () => {
       // spacebar invert will select LICENSE (I'm yet to learn how to press down)
       await cli.type(' i')
 
-      const promptLicense = await cli.readUntil(/which license/)
+      const promptLicense = await cli.readUntil(/which license(.|\n)*/)
       expect(clearColorMarkers(promptLicense)).toMatchInlineSnapshot(`
         "? 📄  Please choose which license you want for your project: (Use arrow keys or 
         type to search)
@@ -225,7 +225,7 @@ describe('ouxe', () => {
       `)
 
       await cli.type('MIT')
-      const selectedProject = await cli.readUntil(/(0BSD|Searching)/)
+      const selectedProject = await cli.readUntil('❯ MIT')
 
       expect(clearColorMarkers(selectedProject)).toMatchInlineSnapshot(`
         "? 📄  Please choose which license you want for your project: MIT
@@ -234,7 +234,7 @@ describe('ouxe', () => {
 
       await cli.type('')
 
-      const promptUsername = await cli.readUntil(/name of the user/)
+      const promptUsername = await cli.readUntil(/name of the user(\n|.)*/)
       expect(clearColorMarkers(promptUsername)).toMatchInlineSnapshot(`
         "? 👓  What's the name of the user that'll sign the license (Yurick <yurick.hausc
         hild@gmail.com>) "

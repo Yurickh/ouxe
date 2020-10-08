@@ -63,9 +63,10 @@ const spawnBabelNode = (command: string, args: string[]) =>
   )
 
 class Reader {
-  chunks: string[] = []
+  chunks: string[]
 
   constructor(private stream: Readable) {
+    this.chunks = []
     this.startListening()
   }
 

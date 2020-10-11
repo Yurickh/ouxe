@@ -7355,6 +7355,16 @@ nice-try@^1.0.4:
   resolved "https://registry.yarnpkg.com/nice-try/-/nice-try-1.0.5.tgz#a3378a7696ce7d223e88fc9b764bd7ef1089e366"
   integrity sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==
 
+node-ansiparser@^2.2.0:
+  version "2.2.0"
+  resolved "https://registry.yarnpkg.com/node-ansiparser/-/node-ansiparser-2.2.0.tgz#b724d3e5e3fa5a854256bb63aceb091e720793ad"
+  integrity sha1-tyTT5eP6WoVCVrtjrOsJHnIHk60=
+
+node-ansiterminal@^0.2.1-beta:
+  version "0.2.1-beta"
+  resolved "https://registry.yarnpkg.com/node-ansiterminal/-/node-ansiterminal-0.2.1-beta.tgz#f5b684f7f1375f20cc703d95fb33e27cf46ef290"
+  integrity sha1-9baE9/E3XyDMcD2V+zPifPRu8pA=
+
 node-emoji@^1.10.0:
   version "1.10.0"
   resolved "https://registry.yarnpkg.com/node-emoji/-/node-emoji-1.10.0.tgz#8886abd25d9c7bb61802a658523d1f8d2a89b2da"

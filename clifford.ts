@@ -1,17 +1,22 @@
-import { Readable } from 'stream'
 import execa from 'execa'
-import attachDebugListeners, { sanitize } from './attach-debug-listeners'
+import { TextDecoder } from 'util'
+import { Readable } from 'stream'
+import AnsiParser from 'node-ansiparser'
+import { AnsiTerminal } from 'node-ansiterminal'
+import attachDebugListeners from './attach-debug-listeners'
 
 interface CliffordOptions {
   readTimeout: number | false
   debug: boolean
   useBabelNode: boolean
+  replacers: ((chunk: string) => string)[]
 }
 
 const defaultConfig = (command: string) => ({
   debug: false,
   readTimeout: 1000,
   useBabelNode: !command.endsWith('.js'),
+  replacers: [],
 })
 
 const execaOptions = () => ({
@@ -41,15 +46,11 @@ function test(matcher: string | RegExp, subject?: string) {
   return applyMatcher(subject)
 }
 
-function match(matcher: string | RegExp, subject: string) {
-  if (isRegExp(matcher)) {
-    return matcher.exec(subject)
-  } else {
-    const matches = [subject] as RegExpExecArray
-    matches.index = subject.indexOf(matcher)
-    matches.input = subject
-    return matches
-  }
+function commonLeadingString(first: string, second: string) {
+  return first.slice(
+    0,
+    first.split('').findIndex((value, index) => value !== second[index]),
+  )
 }
 
 const spawnNode = (command: string, args: string[]) =>
@@ -62,18 +63,48 @@ const spawnBabelNode = (command: string, args: string[]) =>
     execaOptions(),
   )
 
-class Reader {
-  chunks: string[]
+/**
+ * Normalizes the chunk so its read the same accross platforms. This means:
+ * - adding a carriage return after a feed, as AnsiTerminal doesn't properly pick it up
+ * - removing the ❯ character, as it seems to be read as > in windows
+ * @param chunk A chunk of the readable stream of cli.all
+ */
+const normalizeChunk = (
+  chunk: Uint8Array,
+  replacers: ((chunk: string) => string)[],
+) => {
+  const newBuffer = new Uint8Array(
+    Array.from(chunk).reduce((chunk, char) => {
+      return [...chunk, ...(char === 10 ? [10, 13] : [char])]
+    }, []),
+  )
 
-  constructor(private stream: Readable) {
-    this.chunks = []
-    this.startListening()
+  return replacers.reduce(
+    (string, replacer) => replacer(string),
+    new TextDecoder().decode(newBuffer),
+  )
+}
+
+class Reader {
+  screen: string
+  parser: AnsiParser
+  terminal: AnsiTerminal
+
+  constructor(
+    private stream: Readable,
+    replacers: ((chunk: string) => string)[],
+  ) {
+    this.screen = ''
+    // COMBAK: maybe add options to config these
+    this.terminal = new AnsiTerminal(1000, 1000, 1000)
+    this.parser = new AnsiParser(this.terminal)
+    this.startListening(replacers)
   }
 
-  private async startListening() {
-    for await (const chunk of this.stream) {
-      this.chunks.push(chunk.toString())
-    }
+  private startListening(replacers: ((chunk: string) => string)[]) {
+    this.stream.on('data', (chunk) => {
+      this.parser.parse(normalizeChunk(chunk, replacers))
+    })
   }
 
   private waitForNextChunk() {
@@ -97,45 +128,40 @@ class Reader {
     })
   }
 
-  private matches(matcher: string | RegExp, subject: string) {
-    if (!test(matcher, subject)) {
-      return null
+  private updateScreen() {
+    const currentScreen = this.screen
+    const terminalScreen = this.readScreen()
+
+    // We want to skip overriding the whole screen if the client cleans up the screen to
+    // prepare the next print. Instead, we rely that the startsWith check will take care
+    // of cleaning up if everything is changed.
+    if (terminalScreen !== '') {
+      this.screen = terminalScreen
     }
 
-    const result = match(matcher, subject)
-
-    return {
-      stringUntilMatch: subject.slice(0, result.index + result[0].length),
-      stringFromMatch: subject.slice(result.index + result[0].length),
+    if (terminalScreen.startsWith(currentScreen)) {
+      return terminalScreen.slice(currentScreen.length)
+    } else {
+      return terminalScreen.slice(
+        commonLeadingString(currentScreen, terminalScreen).length,
+      )
     }
   }
 
-  async until(matcher: string | RegExp) {
-    const appearanceWithinChunks = this.chunks.map((chunk) =>
-      this.matches(matcher, chunk),
-    )
-    if (appearanceWithinChunks.some(Boolean)) {
-      const index = appearanceWithinChunks.findIndex(Boolean)
-      const stringUntilMatch =
-        this.chunks.slice(0, index).join('')
-        + appearanceWithinChunks[index].stringUntilMatch
+  public readScreen() {
+    return this.terminal.toString().trimRight()
+  }
 
-      this.chunks = [stringUntilMatch, ...this.chunks.slice(index + 1)]
-
-      // console.log(matcher, 'appearanceWithinChunks')
-      return stringUntilMatch
+  public async until(matcher: string | RegExp) {
+    if (test(matcher, this.readScreen())) {
+      return this.updateScreen()
     }
 
-    // From this point forward we know `this.chunks` doesn't contain the match,
-    // so we can check for incoming chunks
-
-    let incomingChunk: string
-    while ((incomingChunk = await this.waitForNextChunk())) {
-      const appearanceInChunk = this.matches(matcher, incomingChunk)
-
-      if (appearanceInChunk !== null) {
-        this.chunks = [appearanceInChunk.stringFromMatch]
-        return appearanceInChunk.stringUntilMatch
+    while (await this.waitForNextChunk()) {
+      // We update the screen on every iteration so we get only the final chunk by the end
+      const diff = this.updateScreen()
+      if (test(matcher, diff)) {
+        return diff
       }
     }
   }
@@ -162,18 +188,13 @@ export default function clifford(
     args,
   )}\` ]`
 
-  const reader = new Reader(cli.all)
+  const reader = new Reader(cli.all, optionsWithDefault.replacers)
 
   return {
     // Although we don't need await here, it seems `write` might be async on windows
-    type: async (string: string) => {
-      if (optionsWithDefault.debug) {
-        // console.log(`[stdin]: ${sanitize(string + '\n')}`)
-      }
-
-      return cli.stdin.write(`${string}\n`)
-    },
+    type: async (string: string) => cli.stdin.write(`${string}\n`),
     read: () => cli.then(({ all }) => all),
+    readScreen: () => reader.readScreen(),
     readLine: () => reader.until('\n'),
     readUntil: (matcher: string | RegExp) => reader.until(matcher),
     kill: () => cli.cancel(),

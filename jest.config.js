@@ -5,5 +5,5 @@ module.exports = {
     'jest-watch-typeahead/testname',
   ],
   testTimeout: 10000,
-  watchPathIgnorePatterns: ['fixtures'],
+  watchPathIgnorePatterns: ['fixtures', 'node_modules'],
 }

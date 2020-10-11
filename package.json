@@ -27,6 +27,7 @@
     "semantic-release": "semantic-release"
   },
   "dependencies": {
+    "@babel/types": "^7.11.5",
     "@rauschma/stringio": "^1.4.0",
     "@types/execa": "^2.0.0",
     "babel-node": "^0.0.1-security",
@@ -56,7 +57,7 @@
     "eslint": "^6.6.0",
     "eslint-config-prettier": "^4.1.0",
     "husky": "^3.0.9",
-    "jest": "^24.1.0",
+    "jest": "^26.5.2",
     "jest-watch-typeahead": "^0.4.0",
     "lint-staged": "^9.4.3",
     "microbundle": "^0.12.0-next.6",

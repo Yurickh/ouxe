@@ -14,7 +14,7 @@
     "/lib",
     "/templates"
   ],
-  "author": "Yurick <yurick.hauschild@gmail.com>",
+  "author": "Yurick <ouxe@yurick.dev>",
   "license": "MIT",
   "repository": "https://github.com/Yurickh/ouxe",
   "scripts": {

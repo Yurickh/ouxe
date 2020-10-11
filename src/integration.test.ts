@@ -46,7 +46,7 @@ describe('ouxe', () => {
     await cli.type('')
 
     const promptWrite = await cli.readUntil(
-      /Do you want to immediately run prettier.*/,
+      /Do you want to immediately run prettier/,
     )
     expect(promptWrite).toMatch(
       'Do you want to immediately run prettier on all files in the project?',
@@ -147,10 +147,11 @@ describe('ouxe', () => {
 
       await cli.type('')
 
-      const promptUsername = await cli.readUntil(/name of the user(\n|.)*/)
+      const promptUsername = await cli.readUntil(/name of the user/)
+      // Funny enough, inquirer _will_ break the text at 80cols
       expect(promptUsername).toMatchInlineSnapshot(`
-        "? 👓  What's the name of the user that'll sign the license (Yurick <yurick.hausc
-        hild@gmail.com>)"
+        "? 👓  What's the name of the user that'll sign the license (Yurick <ouxe@yurick.
+        dev>)"
       `)
 
       // Press enter to confirm default
@@ -192,7 +193,7 @@ describe('ouxe', () => {
       // Press space to select Code of Conduct
       await cli.type(' ')
 
-      const promptEmail = await cli.readUntil(/provide an email.*/)
+      const promptEmail = await cli.readUntil(/provide an email/)
       expect(promptEmail).toMatchInlineSnapshot(`
         "Code of Conduct
         ? 📞 Please provide an email for contact"
@@ -211,7 +212,7 @@ describe('ouxe', () => {
 
       const cli = runOuxe(['documents', '--skip-install'])
 
-      const promptDocument = await cli.readUntil(/which documents(\n|.)*/i)
+      const promptDocument = await cli.readUntil(/which documents/i)
       expect(promptDocument).toMatchInlineSnapshot(`
         "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
         gle all, <i> to invert selection)
@@ -247,10 +248,10 @@ describe('ouxe', () => {
 
       await cli.type('')
 
-      const promptUsername = await cli.readUntil(/name of the user(\n|.)*/)
+      const promptUsername = await cli.readUntil(/name of the user/)
       expect(promptUsername).toMatchInlineSnapshot(`
-        "? 👓  What's the name of the user that'll sign the license (Yurick <yurick.hausc
-        hild@gmail.com>)"
+        "? 👓  What's the name of the user that'll sign the license (Yurick <ouxe@yurick.
+        dev>)"
       `)
 
       // Press enter to confirm default

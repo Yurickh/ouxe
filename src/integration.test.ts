@@ -83,10 +83,9 @@ describe('ouxe', () => {
       await cli.type('y')
 
       const promptPrecommit = await cli.readUntil('precommit')
-      expect(promptPrecommit).toMatchInlineSnapshot(`
-        "
-        ? 💅  Do you want to run prettier as a precommit lint process? (Y/n)"
-      `)
+      expect(promptPrecommit).toMatchInlineSnapshot(
+        `"? 💅  Do you want to run prettier as a precommit lint process? (Y/n)"`,
+      )
 
       await cli.type('n')
 
@@ -120,27 +119,22 @@ describe('ouxe', () => {
       await cli.type('a')
 
       const promptLicense = await cli.readUntil(/which license/)
-      expect(promptLicense).toMatchInlineSnapshot(`
-        "
-        ? 📄  Please choose which license you want for your project: (Use arrow keys or"
-      `)
+      expect(promptLicense).toMatchInlineSnapshot(
+        `"? 📄  Please choose which license you want for your project: (Use arrow keys or"`,
+      )
 
       await cli.type('MIT')
       const selectedProject = await cli.readUntil('> MIT')
 
-      expect(selectedProject).toMatchInlineSnapshot(`
-        "
-        > MIT"
-      `)
+      expect(selectedProject).toMatchInlineSnapshot(`"> MIT"`)
 
       await cli.type('')
 
       const promptUsername = await cli.readUntil(/name of the user/)
       // Funny enough, inquirer _will_ break the text at 80cols
-      expect(promptUsername).toMatchInlineSnapshot(`
-        "
-        ? 👓  What's the name of the user that'll sign the license (Yurick <ouxe@yurick."
-      `)
+      expect(promptUsername).toMatchInlineSnapshot(
+        `"? 👓  What's the name of the user that'll sign the license (Yurick <ouxe@yurick."`,
+      )
 
       // Press enter to confirm default
       await cli.type('')
@@ -179,10 +173,9 @@ describe('ouxe', () => {
       await cli.type(' ')
 
       const promptEmail = await cli.readUntil(/provide an email/)
-      expect(promptEmail).toMatchInlineSnapshot(`
-        "
-        ? 📞 Please provide an email for contact"
-      `)
+      expect(promptEmail).toMatchInlineSnapshot(
+        `"? 📞 Please provide an email for contact"`,
+      )
 
       await cli.type('clifford@yurick.me')
       await cli.readUntil(/Enjoy your configured workplace/)
@@ -206,26 +199,21 @@ describe('ouxe', () => {
       await cli.type(' i')
 
       const promptLicense = await cli.readUntil(/which license/)
-      expect(promptLicense).toMatchInlineSnapshot(`
-        "
-        ? 📄  Please choose which license you want for your project: (Use arrow keys or"
-      `)
+      expect(promptLicense).toMatchInlineSnapshot(
+        `"? 📄  Please choose which license you want for your project: (Use arrow keys or"`,
+      )
 
       await cli.type('MIT')
       const selectedProject = await cli.readUntil('> MIT')
 
-      expect(selectedProject).toMatchInlineSnapshot(`
-        "
-        > MIT"
-      `)
+      expect(selectedProject).toMatchInlineSnapshot(`"> MIT"`)
 
       await cli.type('')
 
       const promptUsername = await cli.readUntil(/name of the user/)
-      expect(promptUsername).toMatchInlineSnapshot(`
-        "
-        ? 👓  What's the name of the user that'll sign the license (Yurick <ouxe@yurick."
-      `)
+      expect(promptUsername).toMatchInlineSnapshot(
+        `"? 👓  What's the name of the user that'll sign the license (Yurick <ouxe@yurick."`,
+      )
 
       // Press enter to confirm default
       await cli.type('')

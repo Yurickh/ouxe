@@ -189,19 +189,30 @@ class Reader {
     const currentScreen = this.screen
     const terminalScreen = this.readScreen()
 
-    // We want to skip overriding the whole screen if the client cleans up the screen to
-    // prepare the next print. Instead, we rely that the startsWith check will take care
-    // of cleaning up if everything is changed.
-    if (terminalScreen !== '') {
-      this.screen = terminalScreen
-    }
-
     if (terminalScreen.startsWith(currentScreen)) {
-      return terminalScreen.slice(currentScreen.length)
+      const diff = terminalScreen.slice(currentScreen.length)
+
+      // We want to skip overriding the whole screen if the client cleans up the screen to
+      // prepare the next print. Instead, we rely that the startsWith check will take care
+      // of cleaning up if everything is changed.
+      if (terminalScreen !== '') {
+        const [firstLineOfDiff] = diff.split(EOL)
+
+        this.screen += firstLineOfDiff + EOL
+      }
+
+      return diff
     } else {
-      return terminalScreen.slice(
-        commonLeadingString(currentScreen, terminalScreen).length,
-      )
+      const commonBase = commonLeadingString(currentScreen, terminalScreen)
+      const diff = terminalScreen.slice(commonBase.length)
+
+      if (terminalScreen !== '') {
+        const [firstLineOfDiff] = diff.split(EOL)
+
+        this.screen = commonBase + firstLineOfDiff + EOL
+      }
+
+      return diff
     }
   }
 
@@ -292,13 +303,3 @@ export default function clifford(
     toJSON: () => stringification,
   }
 }
-/**
- * Hey there Yurick from the future! I hope you're having a good time :)~
- * The last thing you noticed you needed to do here was to make so the read methods do it by
- * a per-line basis. That means you'll have to add some logic on the until method so it returns
- * the line that matched, and we skip adding the lines that came after that to the internal screen
- * representation.
- * This is the best solution because sometimes inquirer will yield two chunks or one chunk for the
- *  same strings, which makes it super hard to do snapshot testing.
- * Good luck! :hug:
- */

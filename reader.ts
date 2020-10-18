@@ -1,9 +1,10 @@
-import { EOL } from 'os'
 import { EventEmitter } from 'events'
 import { Readable } from 'stream'
 import { TextDecoder } from 'util'
 import { Terminal } from './terminal'
 import { EventQueue } from './event-queue'
+
+const EOL = '\n'
 
 interface ReaderConfig {
   replacers?: ((chunk: string) => string)[]
@@ -70,7 +71,8 @@ export class Reader {
   constructor(private stream: Readable, config: ReaderConfig) {
     this.screen = ''
     this.terminal = new Terminal()
-    this.debug = config.debug ?? false
+    // this.debug = config.debug ?? false
+    this.debug = false
     // Turns out o que a gente quer aqui não é um emitter, e sim uma stream mesmo,
     // porque o emitter só vai notificar o pessoal que já está subscrito, mas a gente
     // quer _esperar_ o próximo evento, mesmo se ele já aconteceu

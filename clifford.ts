@@ -52,6 +52,11 @@ export default function clifford(
     replacers: optionsWithDefault.replacers,
   })
 
+  let isDead = false
+
+  cli.once('close', () => (isDead = true))
+  cli.once('exit', () => (isDead = true))
+
   return {
     // Although we don't need await here, it seems `write` might be async on windows
     type: async (string: string) => cli.stdin.write(`${string}\n`),
@@ -60,12 +65,9 @@ export default function clifford(
     readScreen: () => reader.readScreen(),
     readUntil: (matcher: string | RegExp) => reader.until(matcher),
     untilClose: () =>
-      Promise.race([
-        reader.untilClose(),
-        new Promise((resolve) => {
-          cli.once('close', resolve)
-        }),
-      ]),
+      new Promise((resolve) =>
+        isDead ? resolve() : cli.once('close', resolve),
+      ),
     kill: () => cli.cancel(),
     toString: () => stringification,
     toJSON: () => stringification,

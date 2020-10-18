@@ -1,9 +1,10 @@
+import { EOL } from 'os'
 import execa from 'execa'
 import { TextDecoder } from 'util'
 import { Readable } from 'stream'
+import { EventEmitter } from 'events'
 import AnsiParser from 'node-ansiparser'
 import { AnsiTerminal } from 'node-ansiterminal'
-import attachDebugListeners from './attach-debug-listeners'
 
 interface CliffordOptions {
   readTimeout: number | false
@@ -64,9 +65,7 @@ const spawnBabelNode = (command: string, args: string[]) =>
   )
 
 /**
- * Normalizes the chunk so its read the same accross platforms. This means:
- * - adding a carriage return after a feed, as AnsiTerminal doesn't properly pick it up
- * - removing the ❯ character, as it seems to be read as > in windows
+ * Normalizes the chunk so its read the same accross platforms.
  * @param chunk A chunk of the readable stream of cli.all
  */
 const normalizeChunk = (
@@ -85,46 +84,104 @@ const normalizeChunk = (
   )
 }
 
-class Reader {
-  screen: string
+interface ReaderConfig {
+  replacers?: ((chunk: string) => string)[]
+  debug?: boolean
+}
+
+class EventQueue {
+  private readPointer: number
+  private writePointer: number
+
+  constructor(private emitter: EventEmitter, private event: string) {
+    this.readPointer = 0
+    this.writePointer = 0
+
+    this.emitter.on(this.event, this.write)
+  }
+
+  private write() {
+    ++this.writePointer
+  }
+
+  private isLagging() {
+    return this.readPointer < this.writePointer
+  }
+
+  public dispose() {
+    this.emitter.off(this.event, this.write)
+  }
+
+  public async next() {
+    return new Promise<true>((resolve) => {
+      if (this.isLagging()) {
+        ++this.readPointer
+        resolve(true)
+      }
+
+      this.emitter.once(this.event, () => {
+        ++this.readPointer
+        resolve(true)
+      })
+    })
+  }
+}
+
+class Terminal {
   parser: AnsiParser
   terminal: AnsiTerminal
 
-  constructor(
-    private stream: Readable,
-    replacers: ((chunk: string) => string)[],
-  ) {
-    this.screen = ''
-    // COMBAK: maybe add options to config these
-    this.terminal = new AnsiTerminal(1000, 1000, 1000)
+  constructor() {
+    this.terminal = new AnsiTerminal(1000, 1000, Infinity)
     this.parser = new AnsiParser(this.terminal)
-    this.startListening(replacers)
+  }
+
+  public read(): string {
+    return this.terminal.toString()
+  }
+
+  public write(chunk: string): void {
+    return this.parser.parse(chunk)
+  }
+}
+
+class LineFeedEmitter extends EventEmitter {}
+
+class Reader {
+  screen: string
+  terminal: Terminal
+  debug: boolean
+  lineFeedEmitter: LineFeedEmitter
+
+  constructor(private stream: Readable, config: ReaderConfig) {
+    this.screen = ''
+    this.terminal = new Terminal()
+    this.debug = config.debug ?? false
+    // Turns out o que a gente quer aqui não é um emitter, e sim uma stream mesmo,
+    // porque o emitter só vai notificar o pessoal que já está subscrito, mas a gente
+    // quer _esperar_ o próximo evento, mesmo se ele já aconteceu
+    this.lineFeedEmitter = new LineFeedEmitter()
+
+    this.startListening(config.replacers)
   }
 
   private startListening(replacers: ((chunk: string) => string)[]) {
     this.stream.on('data', (chunk) => {
-      this.parser.parse(normalizeChunk(chunk, replacers))
-    })
-  }
+      normalizeChunk(chunk, replacers)
+        .split(EOL)
+        .forEach((chunkLine, index, array) => {
+          // We want to setImmediate so each line feed is reacted to independently
+          setImmediate(() => {
+            this.terminal.write(
+              chunkLine + (index + 1 === array.length ? '' : EOL),
+            )
+            this.lineFeedEmitter.emit('line')
 
-  private waitForNextChunk() {
-    return new Promise<string>((resolve, reject) => {
-      let resolved = false
-      this.stream.once('data', (chunk) => {
-        if (!resolved) {
-          resolved = true
-          resolve(chunk.toString())
-        }
-      })
-
-      this.stream.once('close', () => {
-        if (!resolved) {
-          resolved = true
-          reject(
-            new Error('[Clifford]: Reached end of input when trying to read.'),
-          )
-        }
-      })
+            if (this.debug) {
+              console.info('[current screen]\n', this.readScreen())
+            }
+          })
+        })
     })
   }
 
@@ -148,22 +205,49 @@ class Reader {
     }
   }
 
-  public readScreen() {
-    return this.terminal.toString().trimRight()
+  // TODO: this doesn't seem to work :T
+  public untilClose() {
+    return new Promise((resolve) => {
+      this.stream.once('close', () => {
+        resolve()
+      })
+    })
   }
 
-  public async until(matcher: string | RegExp) {
-    if (test(matcher, this.readScreen())) {
-      return this.updateScreen()
-    }
+  public readScreen() {
+    // TODO: add types to terminal
+    return this.terminal.read().trimRight()
+  }
 
-    while (await this.waitForNextChunk()) {
+  /**
+   * Method to wait until a line is printed with a given string.
+   * @param matcher The string you're looking for, or a regex expression to match.
+   */
+  public async until(matcher: string | RegExp) {
+    const eventQueue = new EventQueue(this.lineFeedEmitter, 'line')
+    do {
       // We update the screen on every iteration so we get only the final chunk by the end
       const diff = this.updateScreen()
       if (test(matcher, diff)) {
+        eventQueue.dispose()
         return diff
       }
+    } while (await eventQueue.next())
+  }
+
+  /**
+   * Method to find a line in the screen that matches the matcher.
+   * Will search from bottom to top and return the first line that matches.
+   * @param matcher The screen you're looking for, or a regex expression to match.
+   */
+  public async findByText(matcher: string | RegExp) {
+    const screen = this.readScreen()
+
+    if (!test(matcher, screen)) {
+      return this.until(matcher)
     }
+
+    return screen.split(EOL).reverse().find(test(matcher))
   }
 }
 
@@ -180,25 +264,41 @@ export default function clifford(
   const spawner = optionsWithDefault.useBabelNode ? spawnBabelNode : spawnNode
   const cli = spawner(command, args)
 
-  if (options.debug) {
-    attachDebugListeners(command, cli)
-  }
-
   const stringification = `[Clifford instance: running process for \`${command}\` with args \`${JSON.stringify(
     args,
   )}\` ]`
 
-  const reader = new Reader(cli.all, optionsWithDefault.replacers)
+  const reader = new Reader(cli.all, {
+    debug: optionsWithDefault.debug,
+    replacers: optionsWithDefault.replacers,
+  })
 
   return {
     // Although we don't need await here, it seems `write` might be async on windows
     type: async (string: string) => cli.stdin.write(`${string}\n`),
     read: () => cli.then(({ all }) => all),
+    findByText: (matcher: string | RegExp) => reader.findByText(matcher),
     readScreen: () => reader.readScreen(),
-    readLine: () => reader.until('\n'),
     readUntil: (matcher: string | RegExp) => reader.until(matcher),
+    untilClose: () =>
+      Promise.race([
+        reader.untilClose(),
+        new Promise((resolve) => {
+          cli.once('close', resolve)
+        }),
+      ]),
     kill: () => cli.cancel(),
     toString: () => stringification,
     toJSON: () => stringification,
   }
 }
+/**
+ * Hey there Yurick from the future! I hope you're having a good time :)~
+ * The last thing you noticed you needed to do here was to make so the read methods do it by
+ * a per-line basis. That means you'll have to add some logic on the until method so it returns
+ * the line that matched, and we skip adding the lines that came after that to the internal screen
+ * representation.
+ * This is the best solution because sometimes inquirer will yield two chunks or one chunk for the
+ *  same strings, which makes it super hard to do snapshot testing.
+ * Good luck! :hug:
+ */

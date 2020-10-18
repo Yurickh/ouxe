@@ -105,28 +105,26 @@ export class Reader {
 
     if (terminalScreen.startsWith(currentScreen)) {
       const diff = terminalScreen.slice(currentScreen.length)
+      const [firstLineOfDiff] = diff.split(EOL)
 
       // We want to skip overriding the whole screen if the client cleans up the screen to
       // prepare the next print. Instead, we rely that the startsWith check will take care
       // of cleaning up if everything is changed.
       if (terminalScreen !== '') {
-        const [firstLineOfDiff] = diff.split(EOL)
-
         this.screen += firstLineOfDiff + EOL
       }
 
-      return diff
+      return firstLineOfDiff
     } else {
       const commonBase = commonLeadingString(currentScreen, terminalScreen)
       const diff = terminalScreen.slice(commonBase.length)
+      const [firstLineOfDiff] = diff.split(EOL)
 
       if (terminalScreen !== '') {
-        const [firstLineOfDiff] = diff.split(EOL)
-
         this.screen = commonBase + firstLineOfDiff + EOL
       }
 
-      return diff
+      return firstLineOfDiff
     }
   }
 

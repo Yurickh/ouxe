@@ -8,7 +8,7 @@ export class EventQueue {
     this.readPointer = 0
     this.writePointer = 0
 
-    this.emitter.on(this.event, this.write)
+    this.emitter.on(this.event, () => this.write())
   }
 
   private write() {
@@ -28,12 +28,12 @@ export class EventQueue {
       if (this.isLagging()) {
         ++this.readPointer
         resolve(true)
+      } else {
+        this.emitter.once(this.event, () => {
+          ++this.readPointer
+          resolve(true)
+        })
       }
-
-      this.emitter.once(this.event, () => {
-        ++this.readPointer
-        resolve(true)
-      })
     })
   }
 }

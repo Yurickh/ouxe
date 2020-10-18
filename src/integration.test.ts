@@ -82,7 +82,7 @@ describe('ouxe', () => {
       )
       await cli.type('y')
 
-      const promptPrecommit = await cli.readUntil('precommit')
+      const promptPrecommit = await cli.findByText('precommit')
       expect(promptPrecommit).toMatchInlineSnapshot(
         `"? 💅  Do you want to run prettier as a precommit lint process? (Y/n)"`,
       )

@@ -1,7 +1,7 @@
 name: CI
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
@@ -9,7 +9,7 @@ jobs:
   build:
     strategy:
       matrix:
-        node-version: [10.x, 13.x]
+        node-version: [12.x, 14.x]
         os: [ubuntu-latest, windows-latest, macOS-latest]
 
     runs-on: ${{ matrix.os }}
@@ -25,4 +25,4 @@ jobs:
       - name: Build
         run: yarn build
       - name: Test
-        run: yarn test
+        run: yarn test:ci

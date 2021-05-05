@@ -1,60 +1,51 @@
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import clifford from 'clifford'
+import clifford from '../clifford'
 import reserveFile from './helpers/reserve-file'
-
-const OUXE = require.resolve('.')
-
-const leadingQuestionMark = /\[32m\?/
-
-// TODO: consider moving this to clifford
-const clearColorMarkers = (string: string | undefined): string =>
-  // eslint-disable-next-line no-control-regex
-  string?.replace(/\x1b\[\d{0,3}[\w]/g, '').replace(/^\s/g, '')
 
 const rootPath = (pathName: string): string =>
   path.join(__dirname, '..', pathName)
 
-const runOuxe = (
-  args: Parameters<typeof clifford>[1],
-  optOverrides: Partial<Parameters<typeof clifford>[2]> = {},
-) => clifford(OUXE, args, { useBabelNode: true, ...optOverrides })
+const runOuxe = (args: string[], options: object = {}) =>
+  clifford('./src/index.ts', args, {
+    ...options,
+    replacers: [
+      // Inquirer seems to avoid using fancy characters in windows
+      (chunk) => chunk.replace(/❯/g, '>'),
+      (chunk) => chunk.replace(/◯/g, '( )'),
+    ],
+  })
 
 describe('ouxe', () => {
+  let cli: ReturnType<typeof clifford>
   let returnFile: () => void
 
   beforeEach(() => {
     returnFile = () => undefined
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     returnFile()
+    cli.kill()
+    await cli.untilClose()
   })
 
   it('runs help', async () => {
-    const cli = runOuxe(['--help'])
+    cli = runOuxe(['--help'])
 
-    const output = await cli.read()
-
-    expect(output).toMatchSnapshot()
+    expect(await cli.read()).toMatchSnapshot()
   })
 
   it('prompts for a packager if none is identified', async () => {
     returnFile = reserveFile(rootPath('yarn.lock'))
 
-    const cli = runOuxe(['prettier', '--skip-install'], {
-      readDelimiter: leadingQuestionMark,
-      readTimeout: 0,
-    })
+    cli = runOuxe(['prettier', '--skip-install'])
 
-    const promptPackager = await cli.readLine()
-    expect(promptPackager).toMatch(
-      'Which package manager do you intend to use?',
-    )
+    await cli.findByText('Which package manager do you intend to use?')
     // press enter for yarn
     await cli.type('')
 
-    const promptWrite = await cli.readUntil(
+    const promptWrite = await cli.findByText(
       /Do you want to immediately run prettier/,
     )
     expect(promptWrite).toMatch(
@@ -81,24 +72,24 @@ describe('ouxe', () => {
       `,
       )
 
-      const cli = runOuxe(['prettier', '--skip-install'], {
-        readDelimiter: leadingQuestionMark,
-      })
+      cli = runOuxe(['prettier', '--skip-install'])
 
       const promptWrite = await cli.readUntil(
-        /Do you want to immediately run prettier/,
+        'Do you want to immediately run prettier',
       )
       expect(promptWrite).toMatch(
         'Do you want to immediately run prettier on all files in the project?',
       )
       await cli.type('y')
 
-      const promptPrecommit = await cli.readUntil(/precommit/)
-      expect(clearColorMarkers(promptPrecommit)).toMatchSnapshot()
+      const promptPrecommit = await cli.findByText('precommit')
+      expect(promptPrecommit).toMatchInlineSnapshot(
+        `"? 💅  Do you want to run prettier as a precommit lint process? (Y/n)"`,
+      )
 
       await cli.type('n')
 
-      await cli.readUntil(/Enjoy your configured workplace/)
+      await cli.readUntil('Enjoy your configured workplace')
 
       expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()
     })
@@ -116,59 +107,47 @@ describe('ouxe', () => {
         returnCOC()
       }
 
-      const cli = runOuxe(['documents', '--skip-install'], {
-        readDelimiter: leadingQuestionMark,
-      })
+      cli = runOuxe(['documents', '--skip-install'])
 
-      const promptDocument = await cli.readUntil(/Which documents/)
-      expect(clearColorMarkers(promptDocument)).toMatchInlineSnapshot(`
-        "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
-        gle all, <i> to invert selection)
-        ❯◯ Code of Conduct
-         ◯ License"
-      `)
+      const promptDocument = await cli.readUntil(
+        /Which documents do you want to create/m,
+      )
+      expect(promptDocument).toMatchInlineSnapshot(
+        `"? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog"`,
+      )
 
       await cli.type('a')
 
       const promptLicense = await cli.readUntil(/which license/)
-      expect(clearColorMarkers(promptLicense)).toMatchInlineSnapshot(`
-        "? 📄  Please choose which license you want for your project: (Use arrow keys or 
-        type to search)
-        ❯ 0BSD 
-          AAL 
-          AFL-1.1 
-          AFL-1.2 
-          AFL-2.0 
-          AFL-2.1 
-          AFL-3.0 
-        (Move up and down to reveal more choices)"
-      `)
+      expect(promptLicense).toMatchInlineSnapshot(
+        `"? 📄  Please choose which license you want for your project: (Use arrow keys or"`,
+      )
 
       await cli.type('MIT')
-      const selectedProject = await cli.readUntil(/(0BSD|Searching)/, {
-        stopsAppearing: true,
-      })
+      const selectedProject = await cli.readUntil('> MIT')
 
-      expect(clearColorMarkers(selectedProject)).toMatchInlineSnapshot(`
-        "? 📄  Please choose which license you want for your project: MIT
-        ❯ MIT "
-      `)
+      expect(selectedProject).toMatchInlineSnapshot(`"> MIT"`)
 
       await cli.type('')
 
       const promptUsername = await cli.readUntil(/name of the user/)
-      expect(clearColorMarkers(promptUsername)).toMatchInlineSnapshot(`
-        "? 👓  What's the name of the user that'll sign the license (Yurick <yurick.hausc
-        hild@gmail.com>) "
-      `)
+      // Funny enough, inquirer _will_ break the text at 80cols
+      expect(promptUsername).toMatchInlineSnapshot(
+        `"? 👓  What's the name of the user that'll sign the license (Yurick <ouxe@yurick."`,
+      )
 
       // Press enter to confirm default
       await cli.type('')
 
-      const promptEmail = await cli.readUntil(/provide an email/)
-      expect(clearColorMarkers(promptEmail)).toMatchInlineSnapshot(
-        `"? 📞 Please provide an email for contact "`,
-      )
+      await cli.readUntil(/provide an email/)
+      expect(cli.readScreen()).toMatchInlineSnapshot(`
+        "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
+        gle all, <i> to invert selection)Code of Conduct, License
+        ? 📄  Please choose which license you want for your project: MIT
+        ? 👓  What's the name of the user that'll sign the license Yurick <ouxe@yurick.d
+        ev>
+        ? 📞 Please provide an email for contact"
+      `)
 
       await cli.type('clifford@yurick.me')
       await cli.type('')
@@ -180,35 +159,28 @@ describe('ouxe', () => {
     })
 
     it('creates a CODE_OF_CONDUCT.md', async () => {
-      const writableFile = rootPath('CODE_OF_CONDUCT.md')
-      returnFile = reserveFile(writableFile)
+      const codeOfConduct = rootPath('CODE_OF_CONDUCT.md')
+      returnFile = reserveFile(codeOfConduct)
 
-      const cli = runOuxe(['documents', '--skip-install'], {
-        readDelimiter: leadingQuestionMark,
-      })
+      cli = runOuxe(['documents', '--skip-install'])
 
       const promptDocument = await cli.readUntil(/which documents/i)
-      expect(clearColorMarkers(promptDocument)).toMatchInlineSnapshot(`
-        "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
-        gle all, <i> to invert selection)
-        ❯◯ Code of Conduct
-         ◯ License"
-      `)
+      expect(promptDocument).toMatchInlineSnapshot(
+        `"? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog"`,
+      )
 
       // Press space to select Code of Conduct
-      cli.type(' ')
+      await cli.type(' ')
 
       const promptEmail = await cli.readUntil(/provide an email/)
-      expect(clearColorMarkers(promptEmail)).toMatchInlineSnapshot(
-        `"? 📞 Please provide an email for contact "`,
+      expect(promptEmail).toMatchInlineSnapshot(
+        `"? 📞 Please provide an email for contact"`,
       )
 
       await cli.type('clifford@yurick.me')
-      await cli.type('')
-
       await cli.readUntil(/Enjoy your configured workplace/)
 
-      expect(fs.readFileSync(writableFile).toString()).toMatchSnapshot()
+      expect(fs.readFileSync(codeOfConduct).toString()).toMatchSnapshot()
     })
 
     it('creates a LICENSE file', async () => {
@@ -216,52 +188,32 @@ describe('ouxe', () => {
 
       returnFile = reserveFile(license)
 
-      const cli = runOuxe(['documents', '--skip-install'], {
-        readDelimiter: leadingQuestionMark,
-      })
+      cli = runOuxe(['documents', '--skip-install'])
 
       const promptDocument = await cli.readUntil(/which documents/i)
-      expect(clearColorMarkers(promptDocument)).toMatchInlineSnapshot(`
-        "? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog
-        gle all, <i> to invert selection)
-        ❯◯ Code of Conduct
-         ◯ License"
-      `)
+      expect(promptDocument).toMatchInlineSnapshot(
+        `"? 🤔 Which documents do you want to create? (Press <space> to select, <a> to tog"`,
+      )
 
       // spacebar invert will select LICENSE (I'm yet to learn how to press down)
       await cli.type(' i')
 
       const promptLicense = await cli.readUntil(/which license/)
-      expect(clearColorMarkers(promptLicense)).toMatchInlineSnapshot(`
-        "? 📄  Please choose which license you want for your project: (Use arrow keys or 
-        type to search)
-        ❯ 0BSD 
-          AAL 
-          AFL-1.1 
-          AFL-1.2 
-          AFL-2.0 
-          AFL-2.1 
-          AFL-3.0 
-        (Move up and down to reveal more choices)"
-      `)
+      expect(promptLicense).toMatchInlineSnapshot(
+        `"? 📄  Please choose which license you want for your project: (Use arrow keys or"`,
+      )
 
       await cli.type('MIT')
-      const selectedProject = await cli.readUntil(/(0BSD|Searching)/, {
-        stopsAppearing: true,
-      })
+      const selectedProject = await cli.readUntil('> MIT')
 
-      expect(clearColorMarkers(selectedProject)).toMatchInlineSnapshot(`
-        "? 📄  Please choose which license you want for your project: MIT
-        ❯ MIT "
-      `)
+      expect(selectedProject).toMatchInlineSnapshot(`"> MIT"`)
 
       await cli.type('')
 
       const promptUsername = await cli.readUntil(/name of the user/)
-      expect(clearColorMarkers(promptUsername)).toMatchInlineSnapshot(`
-        "? 👓  What's the name of the user that'll sign the license (Yurick <yurick.hausc
-        hild@gmail.com>) "
-      `)
+      expect(promptUsername).toMatchInlineSnapshot(
+        `"? 👓  What's the name of the user that'll sign the license (Yurick <ouxe@yurick."`,
+      )
 
       // Press enter to confirm default
       await cli.type('')

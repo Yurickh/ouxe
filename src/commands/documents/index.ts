@@ -5,6 +5,7 @@ import covgen from 'covgen'
 
 import pkg from '../../../package.json'
 import createFile from '../../helpers/create-file'
+import { waitForFile } from '../../helpers/wait-for-file'
 
 interface DocumentsArguments {
   coc: boolean
@@ -84,6 +85,8 @@ export const handler = async (
     ])
 
     await covgen(contact, './CODE_OF_CONDUCT.md').catch(console.log)
+
+    await waitForFile('./CODE_OF_CONDUCT.md')
   }
 
   if (!argv.skipCongrats) {

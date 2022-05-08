@@ -1,18 +1,17 @@
 {
   "name": "ouxe",
   "version": "1.0.9",
-  "main": "lib/ouxe.js",
-  "module": "lib/ouxe.mjs",
-  "source": "src/index.ts",
+  "type": "module",
+  "bin": {
+    "ouxe": "./bin/ouxe.cjs"
+  },
+  "source": "src/index-gluegun.ts",
+  "main": "lib/ouxe.cjs",
   "engines": {
     "node": ">=10.16.0"
   },
-  "bin": {
-    "ouxe": "./lib/ouxe.js"
-  },
   "files": [
-    "/lib",
-    "/templates"
+    "/lib"
   ],
   "author": "Yurick <yurick.hauschild@gmail.com>",
   "license": "MIT",
@@ -20,15 +19,16 @@
   "scripts": {
     "test": "jest",
     "lint": "eslint .",
-    "build": "microbundle --target node",
+    "build": "rm -rf lib && microbundle --target node && yarn copy-templates",
     "start": "microbundle watch",
-    "ouxe": "babel-node --extensions '.ts' -- ./src/index.ts",
+    "copy-templates": "cp -a ./src/templates ./lib/templates",
     "semantic-release": "semantic-release"
   },
   "dependencies": {
     "covgen": "^3.1.2",
     "cross-spawn": "^6.0.5",
     "fs-extra": "^7.0.1",
+    "gluegun": "^5.1.2",
     "inquirer": "^6.2.2",
     "inquirer-autocomplete-prompt": "^1.0.2",
     "license": "^1.0.3",
@@ -39,6 +39,7 @@
     "@babel/node": "^7.7.0",
     "@babel/preset-env": "^7.5.5",
     "@babel/preset-typescript": "^7.3.3",
+    "@babel/register": "^7.17.7",
     "@semantic-release/git": "^9.0.0",
     "@types/fs-extra": "^8.0.1",
     "@types/inquirer": "^6.5.0",
@@ -51,16 +52,16 @@
     "clifford": "^2.0.1",
     "eslint": "^6.6.0",
     "eslint-config-prettier": "^4.1.0",
-    "husky": "^3.0.9",
+    "husky": "^7.0.4",
     "jest": "^24.1.0",
     "jest-watch-typeahead": "^0.4.0",
-    "lint-staged": "^9.4.3",
-    "microbundle": "^0.12.0-next.6",
+    "lint-staged": "^12.4.1",
+    "microbundle": "^0.15.0",
     "prettier": "npm:@btmills/prettier",
     "rollup": "^2.18.0",
     "semantic-release": "^17.2.3",
     "semantic-release-gitmoji": "^1.3.2",
     "sha1": "^1.1.1",
-    "typescript": "^3.8.3"
+    "typescript": "^4.6.4"
   }
 }

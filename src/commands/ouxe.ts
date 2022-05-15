@@ -13,10 +13,12 @@ export const run = async (toolbox: GluegunToolbox) => {
     },
   ])
 
+  toolbox.config.skipCongrats = true
+
   if (features.includes('prettier')) {
-    await prettier.run(toolbox, true)
+    await prettier.run(toolbox)
   }
 
-  // WHY??
+  toolbox.print.info('🎉  Enjoy your configured workplace!')
   process.exit(0)
 }

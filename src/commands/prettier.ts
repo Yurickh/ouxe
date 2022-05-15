@@ -3,17 +3,13 @@ import lintStagedRC from '../templates/prettier.lintstagedrc.json'
 
 export const name = 'prettier'
 export const alias = ['p']
-export const description = 'Opinionated prettier configuration'
+export const description = 'Configures prettier for your project'
 
-export const defaults = {
-  lintStaged: true,
-}
-
-export const run = async (toolbox: GluegunToolbox, skipCongrats = false) => {
+export const run = async (toolbox: GluegunToolbox) => {
   const filesToClean = []
   const lintStaged =
     toolbox.parameters.options.lintStaged
-    || (await toolbox.prompt.confirm(
+    ?? (await toolbox.prompt.confirm(
       'Do you want to run prettier as a precommit lint process?',
       true,
     ))
@@ -47,14 +43,14 @@ export const run = async (toolbox: GluegunToolbox, skipCongrats = false) => {
 
   toolbox.print.info('✨  Creating prettier configuration')
 
-  let spinner = toolbox.print.spin(' Creating .prettierrc.json')
+  let spinner = toolbox.print.spin('Creating .prettierrc.json')
   await toolbox.template.generate({
     template: '.prettierrc.json',
   })
   filesToClean.push('.prettierrc.json')
   spinner.succeed('Created .prettierrc.json')
 
-  spinner = toolbox.print.spin(' Creating .prettierignore')
+  spinner = toolbox.print.spin('Creating .prettierignore')
   await toolbox.template.generate({
     template: '.prettierignore',
   })
@@ -67,15 +63,18 @@ export const run = async (toolbox: GluegunToolbox, skipCongrats = false) => {
     ))
 
   if (write) {
+    const spinner = toolbox.print.spin('Running prettier in your project')
     try {
-      await toolbox.system.run(
+      const stdout = await toolbox.system.run(
         './node_modules/.bin/prettier --write "./**/*.{ts,js,tsx,jsx,json,md,css}"',
       )
+      spinner.succeed('Your files are all pretty!')
+      toolbox.print.info(stdout)
     } catch (exception) {
-      toolbox.print.debug(exception)
-      toolbox.print.error(
+      spinner.fail(
         `There was an error while running prettier during \`./node_modules/bin/prettier --write ./**/*.{ts,js,tsx,jsx,json,md,css}\``,
       )
+      toolbox.print.debug(exception)
       process.exit(1)
     }
   }
@@ -99,24 +98,23 @@ export const run = async (toolbox: GluegunToolbox, skipCongrats = false) => {
         return config
       })
     } else {
-      await toolbox.template.generate({
+      const stdout = await toolbox.template.generate({
         template: 'prettier.lintstagedrc.json',
         target: '.lintstagedrc.json',
       })
+      toolbox.print.info(stdout)
     }
     filesToClean.push('.lintstagedrc.json')
   }
 
   toolbox.print.info('✨  Running prettier in the freshly created files')
-  await toolbox.system.run(
+  const stdout = await toolbox.system.run(
     `./node_modules/.bin/prettier --write ${filesToClean.join(' ')}`,
   )
-
+  toolbox.print.info(stdout)
   toolbox.print.success('✅  Your project now has prettier configured!')
 
-  if (!skipCongrats) {
+  if (!toolbox.config.skipCongrats) {
     toolbox.print.info('🎉  Enjoy your configured workplace!')
-    // why do we need this?
-    process.exit(0)
   }
 }

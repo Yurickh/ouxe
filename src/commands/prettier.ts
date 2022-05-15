@@ -6,6 +6,14 @@ export const alias = ['p']
 export const description = 'Configures prettier for your project'
 
 export const run = async (toolbox: GluegunToolbox) => {
+  // If we're skipping congrats, it means we're being run from top-level
+  if (toolbox.config.skipCongrats) {
+    toolbox.print.divider()
+  }
+  toolbox.print.info(
+    toolbox.print.colors.bold('Configuring your prettier environment'),
+  )
+
   const filesToClean = []
   const lintStaged =
     toolbox.parameters.options.lintStaged
@@ -23,8 +31,12 @@ export const run = async (toolbox: GluegunToolbox) => {
   }
 
   if (!toolbox.parameters.options.skipInstall) {
+    const dependencyList = toolbox.print.colors.highlight(
+      dependencies.join(', '),
+    )
+
     const spinner = toolbox.print.spin(
-      `Installing dependencies: ${dependencies.join(', ')}`,
+      `Installing dependencies: ${dependencyList}`,
     )
     const result = await toolbox.packageManager.add(dependencies, {
       dev: true,
@@ -32,33 +44,41 @@ export const run = async (toolbox: GluegunToolbox) => {
 
     if (!result.success) {
       spinner.fail(
-        `There was an error while installing dependencies during \`${result.command}\``,
+        `There was an error while installing dependencies during \`${toolbox.print.highlight(
+          result.command,
+        )}\``,
       )
       toolbox.print.debug(result.stdout)
       process.exit(1)
     } else {
-      spinner.succeed(`Installed dependencies: ${dependencies.join(', ')}`)
+      spinner.succeed(`Installed dependencies: ${dependencyList}`)
     }
   }
 
-  toolbox.print.info('✨  Creating prettier configuration')
+  toolbox.print.divider()
+  toolbox.print.info(
+    toolbox.print.colors.bold('Creating prettier configuration files'),
+  )
 
-  let spinner = toolbox.print.spin('Creating .prettierrc.json')
-  await toolbox.template.generate({
-    template: '.prettierrc.json',
-  })
-  filesToClean.push('.prettierrc.json')
-  spinner.succeed('Created .prettierrc.json')
+  const filesToGenerate = ['.prettierrc.json', '.prettierignore']
+  const fileList = toolbox.print.colors.highlight(filesToGenerate.join(', '))
+  const spinner = toolbox.print.spin(`Creating ${fileList}`)
 
-  spinner = toolbox.print.spin('Creating .prettierignore')
-  await toolbox.template.generate({
-    template: '.prettierignore',
-  })
-  spinner.succeed('Created .prettierignore')
+  for (const file of filesToGenerate) {
+    await toolbox.template.generate({
+      template: file,
+    })
+
+    if (file.endsWith('json')) {
+      filesToClean.push(file)
+    }
+  }
+
+  spinner.succeed(`Created ${fileList}`)
 
   const write =
     toolbox.parameters.options.write
-    || (await toolbox.prompt.confirm(
+    ?? (await toolbox.prompt.confirm(
       'Do you want to immediately run prettier on all files in the project?',
     ))
 
@@ -68,11 +88,13 @@ export const run = async (toolbox: GluegunToolbox) => {
       const stdout = await toolbox.system.run(
         './node_modules/.bin/prettier --write "./**/*.{ts,js,tsx,jsx,json,md,css}"',
       )
-      spinner.succeed('Your files are all pretty!')
-      toolbox.print.info(stdout)
+      spinner.succeed()
+      toolbox.print.muted(stdout)
     } catch (exception) {
       spinner.fail(
-        `There was an error while running prettier during \`./node_modules/bin/prettier --write ./**/*.{ts,js,tsx,jsx,json,md,css}\``,
+        `There was an error while running prettier during \`${toolbox.print.colors.highlight(
+          './node_modules/bin/prettier --write ./**/*.{ts,js,tsx,jsx,json,md,css}',
+        )}\``,
       )
       toolbox.print.debug(exception)
       process.exit(1)
@@ -80,41 +102,75 @@ export const run = async (toolbox: GluegunToolbox) => {
   }
 
   if (lintStaged) {
+    toolbox.print.divider()
     toolbox.print.info(
-      '✨  Configuring pre-commit hooks to run prettier in changed files',
+      toolbox.print.colors.bold(
+        'Configuring pre-commit hooks to run prettier in changed files',
+      ),
     )
 
     await toolbox.template.generate({
       template: '.huskyrc.json',
     })
     filesToClean.push('.huskyrc.json')
+    toolbox.print.info(
+      `${toolbox.print.checkmark} Created ${toolbox.print.colors.highlight(
+        '.huskyrc.json',
+      )}`,
+    )
 
     if (toolbox.filesystem.exists('.lintstagedrc.json')) {
       // Consider moving to an extension
       await toolbox.patching.update('.lintstagedrc.json', (config) => {
         for (const key in lintStagedRC) {
-          config[key] = lintStagedRC[key]
+          if (
+            config[key]
+            && lintStagedRC[key].every((command: string) =>
+              config[key].includes(command),
+            )
+          ) {
+            // If the config already has all commands, skip including it
+            continue
+          }
+          config[key] = [...(config[key] ?? []), ...lintStagedRC[key]]
         }
         return config
       })
+      toolbox.print.info(
+        `Found an existing ${toolbox.print.colors.highlight(
+          '.lintstagedrc.json',
+        )}, updated it to run prettier in ${toolbox.print.colors.highlight(
+          Object.keys(lintStagedRC).join('; '),
+        )} files.`,
+      )
     } else {
-      const stdout = await toolbox.template.generate({
+      await toolbox.template.generate({
         template: 'prettier.lintstagedrc.json',
         target: '.lintstagedrc.json',
       })
-      toolbox.print.info(stdout)
+      toolbox.print.info(
+        `${toolbox.print.checkmark} Created ${toolbox.print.colors.highlight(
+          '.lintstagedrc.json',
+        )}`,
+      )
     }
     filesToClean.push('.lintstagedrc.json')
   }
 
-  toolbox.print.info('✨  Running prettier in the freshly created files')
+  toolbox.print.divider()
+  toolbox.print.info(
+    toolbox.print.colors.bold('Running prettier in the freshly created files'),
+  )
   const stdout = await toolbox.system.run(
     `./node_modules/.bin/prettier --write ${filesToClean.join(' ')}`,
   )
-  toolbox.print.info(stdout)
-  toolbox.print.success('✅  Your project now has prettier configured!')
+  toolbox.print.muted(stdout)
+  toolbox.print.success(
+    `${toolbox.print.checkmark} Your project now has prettier configured!`,
+  )
 
   if (!toolbox.config.skipCongrats) {
-    toolbox.print.info('🎉  Enjoy your configured workplace!')
+    toolbox.print.info('Enjoy your configured workplace!')
+    process.exit(0)
   }
 }

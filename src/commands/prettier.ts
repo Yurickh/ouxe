@@ -3,8 +3,11 @@ import lintStagedRC from '../templates/prettier.lintstagedrc.json'
 
 export const name = 'prettier'
 export const alias = ['p']
-
 export const description = 'Opinionated prettier configuration'
+
+export const defaults = {
+  lintStaged: true,
+}
 
 export const run = async (toolbox: GluegunToolbox, skipCongrats = false) => {
   const filesToClean = []

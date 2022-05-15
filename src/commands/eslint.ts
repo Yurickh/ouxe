@@ -1,9 +1,4 @@
-import * as inquirer from 'inquirer'
-import { Argv, Arguments } from 'yargs'
-
-import copyTemplate from '../helpers/copy-template'
-import * as lintStagedRC from '../helpers/lint-staged-rc'
-import installDependencies from '../helpers/install-dependencies'
+import { GluegunToolbox } from 'gluegun'
 
 interface EslintArguments {
   lintStaged: boolean
@@ -27,21 +22,36 @@ export const description = 'Opinionated eslint configuration'
 //     })
 //     .group(['l'], 'Modifiers:')
 
-export const run = () => {
-  return false
+export const run = async (toolbox: GluegunToolbox) => {
+  const shouldContinue = toolbox.prompt.confirm(
+    '⚠️  This option is still under development. You might get to strange places. Are you sure you want to continue?',
+    false,
+  )
+
+  if (!shouldContinue) {
+    return
+  }
+
+  const lintStaged =
+    toolbox.parameters.options.lintStaged
+    ?? (await toolbox.prompt.confirm(
+      'Do you want to run eslint as a precommit lint process?',
+      true,
+    ))
+
+  const dependencies = ['eslint']
+
+  if (lintStaged) {
+    dependencies.push('husky')
+    dependencies.push('lint-staged')
+  }
 }
 // export const handler = async (
 //   argv: Arguments<EslintArguments>,
 // ): Promise<void> => {
 //   const packager = await installDependencies(argv)
 //   const devOptions = await inquirer.prompt([
-//     {
-//       type: 'confirm',
-//       name: 'continue',
-//       message:
-//         '⚠️  This option is still under development. You might get to strange places. Are you sure you want to continue?',
-//       default: false,
-//     },
+
 //   ])
 
 //   if (!devOptions.continue) {

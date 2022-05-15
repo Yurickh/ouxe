@@ -1,11 +1,3 @@
-import { Argv, Arguments } from 'yargs'
-import inquirer from 'inquirer'
-import { getLicense, findLicense } from 'license'
-import covgen from 'covgen'
-
-import pkg from '../../package.json'
-import createFile from '../helpers/create-file'
-
 interface DocumentsArguments {
   coc: boolean
   license: boolean
@@ -31,7 +23,7 @@ export const run = () => {
 //         describe: 'Creates a CODE_OF_CONDUCT.md file',
 //       },
 //       license: {
-//         alias: 'l',
+//         alias: 'l',kw
 //         type: 'boolean',
 //         describe: 'Creates a LICENSE file',
 //       },
